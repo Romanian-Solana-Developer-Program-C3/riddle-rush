@@ -1,0 +1,75 @@
+@startuml
+!define RECTANGLE class
+
+RECTANGLE "UserAccount" {
+  * wallet_address: PublicKey
+}
+
+RECTANGLE "ChallengesAccount" {
+  * challenges: HashMap<PublicKey, Challenge>
+}
+
+RECTANGLE "Submission" {
+  * user_pubkey: PublicKey
+  * commitment: [u8; 32]
+  * stake: u64
+  * revealed_answer: Option<String>
+  * revealed_nonce: Option<String>
+  * claimed: bool
+  * revealed: bool
+}
+
+RECTANGLE "ChallengeProgram" {
+  + create_challenge(setter: publicKey, question: String, submission_deadline: Timestamp, reveal_deadline: Timestamp, entry_fee: u64)
+  + submit_answer(challenge: &mut ChallengeAccount, user: PublicKey, answer_commitment: [u8; 32], stake: u64)
+  + reveal_answer(challenge: &mut ChallengeAccount, user: PublicKey, nonce: String)
+  + reveal_solution(challenge: &mut ChallengeAccount)
+  + claim_prize(challenge: &mut ChallengeAccount, user: PublicKey)
+  + get_challenges()
+  + get_submissions(challenge_key: PublicKey)
+}
+
+
+RECTANGLE "Challenge" {
+  * question: String
+  * solution:  String
+  * submission_deadline: Timestamp
+  * answer_reveal_deadline: Timestamp
+  * entry_fee: u64
+  * setter: PublicKey
+  * pot: u64
+  * submissions: HashMap<PublicKey, Submission>
+}
+
+RECTANGLE "Oracle" {
+  + verify_solution(question: String, solution: String) : bool
+}
+
+RECTANGLE "OffChainDB" {
+  * users: HashMap<String, PublicKey>
+  --
+  + put_user(twitter_url: String, wallet_address: PublicKey)
+  + get_user(twitter_url: String) : bool
+}
+
+RECTANGLE "Frontend" {
+  + login_with_twitter(wallet: PublicKey, twitter_Handle: String)
+  + register(wallet: PublicKey, twitter_handle: String)
+  + create_challenge(setter: User, challenge_data: ChallengeData)
+  + submit_answer(challenge_pubkey: PublicKey, user: PublicKey, commitment: [u8; 32], stake: u64)
+  + reveal_answer(challenge_pubkey: PublicKey, user: PublicKey, nonce: String)
+  + claim_prize(challenge_pubkey: PublicKey, user: PublicKey)
+  + reveal_solution(challenge_pubkey: PublicKey)
+  - set_nonce_cookie(challenge_pubkey: PublicKey, user: PublicKey)
+}
+
+UserAccount       ||--o{ Frontend : interacts with
+Frontend          ||--o{ OffChainDB : registers in
+ChallengesAccount ||--o{ Challenge: contains
+ChallengeProgram  ||--o{ ChallengesAccount : manages
+ChallengeProgram  ||--o{ Oracle : uses for verification
+ChallengeProgram  ||--o{ Challenge: creates
+ChallengeProgram  ||--o{ Submission: creates
+Challenge         ||--o{ Submission: contains
+Frontend ||--o{ ChallengeProgram : interacts with
+@enduml
