@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{ChallengeAccount, ANCHOR_DISCRIMINATOR};
+use crate::{ChallengeAccount, ANCHOR_DISCRIMINATOR, MAX_QUESTION_LENGTH};
 use crate::error::RiddleRushError;
 
 #[derive(Accounts)]
@@ -37,11 +37,11 @@ pub fn handler(
         RiddleRushError::AnswerRevealDeadlinBeforeSubmissionDeadline
     );
     require!(
-        _question.len() <= 256,
+        _question.len() <= MAX_QUESTION_LENGTH,
         RiddleRushError::QuestionTooLong
     );
     require!(
-        _solution.len() <= 256,
+        _solution.len() <= MAX_QUESTION_LENGTH,
         RiddleRushError::SolutionTooLong
     );
 
