@@ -41,7 +41,7 @@ describe("riddle-rush", () => {
 
   it("Create challenge - Happy path", async () => {
     const challenge_id = new BN(1234);
-    const question = "Test Challenge";
+    const question = "1 + 2 * (3 - 4.5)";
     const solution = "";
     const sub_deadline = new BN(Math.floor(Date.now() / 1000) + 3600);
     const ans_deadline = new BN(Math.floor(Date.now() / 1000) + 7200);

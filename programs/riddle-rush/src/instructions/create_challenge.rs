@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 
 use crate::{ChallengeAccount, ANCHOR_DISCRIMINATOR};
 use crate::error::RiddleRushError;
+use crate::expression::evaluate_expression;
 
 #[derive(Accounts)]
 #[instruction(id: u64, submission_deadline: i64, answer_reveal_deadline: i64, claim_deadline: i64, entry_fee: u64)]
@@ -30,6 +31,17 @@ pub fn handler(
     _claim_deadline: i64,
     _entry_fee: u64, 
 ) -> Result<()> {
+    // Check if the solution is a valid mathematical expression
+    match evaluate_expression(&_question) {
+        Ok(result) => {
+            msg!("Expression result: {}", result);
+        },
+        Err(e) => {
+            msg!("Error evaluating expression: {:?}", e);
+            return err!(RiddleRushError::InvalidExpression);
+        }
+    }
+
     require!(
         _submission_deadline < _answer_reveal_deadline,
         RiddleRushError::AnswerRevealDeadlinBeforeSubmissionDeadline

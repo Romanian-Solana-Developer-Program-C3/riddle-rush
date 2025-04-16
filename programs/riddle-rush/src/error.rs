@@ -16,6 +16,8 @@ pub enum RiddleRushError {
     SolutionTooLong,
     #[msg("The entry fee must be greater than zero.")]
     ZeroEntryFee,
+    #[msg("Invalid mathematical expression.")]
+    InvalidExpression,
 }
 
 
