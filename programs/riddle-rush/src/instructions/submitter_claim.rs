@@ -1,0 +1,1 @@
+// The player claims the pot if their answer is correct

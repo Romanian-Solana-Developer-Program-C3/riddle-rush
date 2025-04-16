@@ -1,0 +1,1 @@
+// The creator of the challenge reveals the solution to the challenge
