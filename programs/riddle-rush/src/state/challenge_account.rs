@@ -11,8 +11,8 @@ pub struct ChallengeAccount {
     pub solution: String,
     pub submission_deadline: i64,
     pub answer_reveal_deadline: i64,
+    pub claim_deadline: i64,
     pub entry_fee: u64,
     pub setter: Pubkey,
     pub pot: u64,
-    pub submissions: u64,
 }

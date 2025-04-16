@@ -8,6 +8,8 @@ pub enum RiddleRushError {
     SubmissionDeadlinePassed,
     #[msg("The answer reveal deadline must be after the submission deadline.")]
     AnswerRevealDeadlinBeforeSubmissionDeadline,
+    #[msg("The answer reveal deadline must be before the claim deadline.")]
+    AnswerRevealDeadlinBeforeClaimDeadline,
     #[msg("The question is too long, max length: {MAX_QUESTION_LENGTH}")]
     QuestionTooLong,
     #[msg("The solution is too long, max length: {MAX_QUESTION_LENGTH}")]

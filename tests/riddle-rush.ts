@@ -42,13 +42,14 @@ describe("riddle-rush", () => {
   it("Create challenge - Happy path", async () => {
     const challenge_id = new BN(1234);
     const question = "Test Challenge";
-    const solution = "Test Answer";
+    const solution = "";
     const sub_deadline = new BN(Math.floor(Date.now() / 1000) + 3600);
     const ans_deadline = new BN(Math.floor(Date.now() / 1000) + 7200);
+    const claim_deadline = new BN(Math.floor(Date.now() / 1000) + 86400);
     const entry_fee = new BN(1e9);
 
     const tx = await program.methods
-    .createChallenge(challenge_id, question, solution, sub_deadline, ans_deadline, entry_fee)
+    .createChallenge(challenge_id, question, solution, sub_deadline, ans_deadline, claim_deadline, entry_fee)
     .accounts({ ...accounts})
     .signers([setter])
     .rpc();
@@ -68,6 +69,7 @@ describe("riddle-rush", () => {
     assert.equal(challenge.solution, solution);
     assert.equal(challenge.submissionDeadline.toString(), sub_deadline.toString());
     assert.equal(challenge.answerRevealDeadline.toString(), ans_deadline.toString());
+    assert.equal(challenge.claimDeadline.toString(), claim_deadline.toString());
     assert.equal(challenge.entryFee.toString(), entry_fee.toString());
     assert.equal(challenge.setter.toString(), accounts.setter.toString());
     assert.equal(challenge.pot.toString(), "0");
