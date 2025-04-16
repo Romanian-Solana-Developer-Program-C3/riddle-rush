@@ -25,7 +25,6 @@ pub fn handler(
     ctx: Context<CreateChallenge>,
     _id: u64,
     _question: String,
-    _solution: String,
     _submission_deadline: i64,
     _answer_reveal_deadline: i64,   
     _claim_deadline: i64,

@@ -19,7 +19,7 @@ describe("riddle-rush", () => {
   };
 
   before(async() => {
-    const fundAmount = 1e8;
+    const fundAmount = 1e10;
     const fundTx = new Transaction().add(
       SystemProgram.transfer({
         fromPubkey: provider.wallet.publicKey,
@@ -41,7 +41,7 @@ describe("riddle-rush", () => {
 
   it("Create challenge - Happy path", async () => {
     const challenge_id = new BN(1234);
-    const question = "1 + 2 * (3 - 4.5)";
+    const question = "1 * (3 - 4.5)";
     const solution = "";
     const sub_deadline = new BN(Math.floor(Date.now() / 1000) + 3600);
     const ans_deadline = new BN(Math.floor(Date.now() / 1000) + 7200);
@@ -58,7 +58,7 @@ describe("riddle-rush", () => {
     console.log("Your transaction signature", tx);
 
     const challengePda = PublicKey.findProgramAddressSync(
-      [Buffer.from("challenge"), accounts.setter.toBuffer(), challenge_id.toArrayLike(Buffer, "le", 8)],
+      [Buffer.from("challenge"), challenge_id.toArrayLike(Buffer, "le", 8)],
       program.programId
     )[0];
 
@@ -72,7 +72,7 @@ describe("riddle-rush", () => {
     assert.equal(challenge.claimDeadline.toString(), claim_deadline.toString());
     assert.equal(challenge.entryFee.toString(), entry_fee.toString());
     assert.equal(challenge.setter.toString(), accounts.setter.toString());
-    assert.equal(challenge.pot.toString(), "0");
+    assert.equal(challenge.pot.toString(), entry_fee.toString());
     //Todo: verify default submissions state
   });
 });
