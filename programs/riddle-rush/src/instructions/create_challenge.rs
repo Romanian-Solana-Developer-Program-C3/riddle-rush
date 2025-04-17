@@ -1,8 +1,7 @@
 use anchor_lang::prelude::*;
 
-use crate::{ChallengeAccount, ANCHOR_DISCRIMINATOR};
+use crate::{ChallengeAccount, ANCHOR_DISCRIMINATOR, expression::evaluate_expression};
 use crate::error::RiddleRushError;
-use crate::expression::evaluate_expression;
 
 #[derive(Accounts)]
 #[instruction(id: u64, submission_deadline: i64, answer_reveal_deadline: i64, claim_deadline: i64, entry_fee: u64)]
