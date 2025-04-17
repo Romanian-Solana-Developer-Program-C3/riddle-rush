@@ -25,6 +25,6 @@ pub mod riddle_rush {
         claim_deadline: i64,
         entry_fee: u64,
     ) -> Result<()> {
-        create_challenge::handler(ctx, id, question, solution, submission_deadline, answer_reveal_deadline, claim_deadline, entry_fee)
+        create_challenge::handler(ctx, id, question, submission_deadline, answer_reveal_deadline, claim_deadline, entry_fee)
     }
 }
