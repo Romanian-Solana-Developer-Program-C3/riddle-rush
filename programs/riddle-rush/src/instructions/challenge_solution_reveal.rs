@@ -2,6 +2,7 @@
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
+#[instruction(id: u64)]
 pub struct ChallengeSolutionReveal<'info> {
     #[account(mut)]
     pub creator: Signer<'info>,
@@ -13,7 +14,7 @@ pub struct ChallengeSolutionReveal<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<ChallengeSolutionReveal>) -> Result<()> {
+pub fn handler(ctx: Context<ChallengeSolutionReveal>, id: u64) -> Result<()> {
     let challenge = &mut ctx.accounts.challenge;
     require!(Clock::get()?.unix_timestamp > challenge.sumbmission_deadline, RiddleRushError::SolutionRevealDeadlineNotMet);
 
