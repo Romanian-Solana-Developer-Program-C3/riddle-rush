@@ -5,18 +5,16 @@ use crate::{ChallengeAccount, SETTER_CUT};
 use crate::error::RiddleRushError;
 
 #[derive(Accounts)]
-#[instruction(id: u64)]
 pub struct SetterClaim<'info> {
     #[account(mut)]
     pub setter: Signer<'info>,
     #[account(
         mut,
         has_one = setter,
-        constraint = challenge_account.id == id,
         constraint = setter.key() == challenge_account.setter,
         constraint = challenge_account.pot > 0,
         constraint = challenge_account.setter_cut_claimed == false,
-        seeds = [b"challenge", id.to_le_bytes().as_ref()],
+        seeds = [b"challenge", challenge_account.id.to_le_bytes().as_ref()],
         bump,
     )]
     pub challenge_account: Box<Account<'info, ChallengeAccount>>,
