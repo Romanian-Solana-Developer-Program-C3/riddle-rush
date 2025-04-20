@@ -22,6 +22,8 @@ pub enum RiddleRushError {
     WithdrawTooEarly,
     #[msg("User attempting to withdraw after prize claim deadline.")]
     WithdrawTooLate,
+    #[msg("Insufficient funds in the challenge account.")]
+    InsufficientFunds,
 }
 
 

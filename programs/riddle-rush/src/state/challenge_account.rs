@@ -16,4 +16,5 @@ pub struct ChallengeAccount {
     pub setter: Pubkey,
     pub pot: u64, // Total pot amount - don't update on withdraws so we can calculate each player's share
     pub setter_cut_claimed: bool,
+    pub bump: u8,
 }

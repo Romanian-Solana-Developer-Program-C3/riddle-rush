@@ -17,7 +17,7 @@ pub struct SetterClaim<'info> {
         seeds = [b"challenge", challenge_account.id.to_le_bytes().as_ref()],
         bump,
     )]
-    pub challenge_account: Box<Account<'info, ChallengeAccount>>,
+    pub challenge_account: Account<'info, ChallengeAccount>,
     pub system_program: Program<'info, System>,
 }
 
@@ -39,17 +39,24 @@ pub fn handler(
 
     // Calculate the setter's cut
     let setter_cut = ctx.accounts.challenge_account.pot * SETTER_CUT / 100;
-    // Transfer the setter's cut to the setter
-    let cpi_context = CpiContext::new(
-        ctx.accounts.system_program.to_account_info(),
-        anchor_lang::system_program::Transfer {
-            from: ctx.accounts.challenge_account.to_account_info(),
-            to: ctx.accounts.setter.to_account_info(),
-        },
+    
+    // Transfer lamports from challenge_account (PDA) to setter
+    let challenge_account_info = &mut ctx.accounts.challenge_account.to_account_info();
+    let setter_info = &mut ctx.accounts.setter.to_account_info();
+
+    // Ensure the PDA has enough lamports
+    require!(
+        challenge_account_info.lamports() >= setter_cut,
+        RiddleRushError::InsufficientFunds
     );
-    anchor_lang::system_program::transfer(cpi_context, setter_cut)?;
+
+    // Decrease the PDA's lamport balance
+    **challenge_account_info.lamports.borrow_mut() -= setter_cut;
+    // Increase the setter's lamport balance
+    **setter_info.lamports.borrow_mut() += setter_cut;
 
     msg!("Transferred {} lamports to setter", setter_cut);
+
     // Update the challenge account
     ctx.accounts.challenge_account.setter_cut_claimed = true;
     Ok(())

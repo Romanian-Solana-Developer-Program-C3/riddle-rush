@@ -175,9 +175,15 @@ describe("riddle-rush", () => {
 
     //100 seconds to make the submission
     const sub_deadline = new BN(now + 1);
-    const ans_deadline = new BN(now + 101);
+    const ans_deadline = new BN(now + 2);
     const claim_deadline = new BN(now + 102);
     
+    const challengePda = PublicKey.findProgramAddressSync(
+      [Buffer.from("challenge"), challenge_id.toArrayLike(Buffer, "le", 8)],
+      program.programId
+    )[0];
+
+    accounts.challengeAccount = challengePda;
 
     const txCreate = await program.methods
     .createChallenge(challenge_id, question, sub_deadline, ans_deadline, claim_deadline, entry_fee)
@@ -188,17 +194,11 @@ describe("riddle-rush", () => {
     await provider.connection.confirmTransaction(txCreate, "confirmed");
     console.log("Your create transaction signature", txCreate);
 
-    const challengePda = PublicKey.findProgramAddressSync(
-      [Buffer.from("challenge"), challenge_id.toArrayLike(Buffer, "le", 8)],
-      program.programId
-    )[0];
-
-    accounts.challengeAccount = challengePda;
-
     // Wait for 5 seconds
     await new Promise(resolve => setTimeout(resolve, 5000));
 
     const initial_setter_balance = await provider.connection.getBalance(setter.publicKey);
+    const initial_pda_balance = await provider.connection.getBalance(challengePda);
 
     const tx = await program.methods
       .setterClaim()
@@ -214,9 +214,10 @@ describe("riddle-rush", () => {
     //After the 10 percent cut
     const expected_challenge_pot = initial_challenge_pot.sub(initial_challenge_pot.div(new BN(10)));
     const final_setter_balance = await provider.connection.getBalance(setter.publicKey);
+    const final_pda_balance = await provider.connection.getBalance(challengePda);
 
-    assert.equal(challenge.pot.toString(), expected_challenge_pot.toString());
     assert.equal(challenge.setterCutClaimed, true);
     assert.isAbove(final_setter_balance, initial_setter_balance);
+    assert.isBelow(final_pda_balance, initial_pda_balance);
   });
 });

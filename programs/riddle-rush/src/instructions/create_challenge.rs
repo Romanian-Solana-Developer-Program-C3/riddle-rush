@@ -77,6 +77,7 @@ pub fn handler(
             setter: ctx.accounts.setter.key(),
             pot: _entry_fee, // Initialize pot with entry fee
             setter_cut_claimed: false,
+            bump: ctx.bumps.challenge_account,
         },
     );
     Ok(())
