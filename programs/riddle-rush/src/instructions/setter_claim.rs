@@ -49,6 +49,8 @@ pub fn handler(
         challenge_account_info.lamports() >= setter_cut,
         RiddleRushError::InsufficientFunds
     );
+    // Update the challenge account
+    ctx.accounts.challenge_account.setter_cut_claimed = true;
 
     // Decrease the PDA's lamport balance
     **challenge_account_info.lamports.borrow_mut() -= setter_cut;
@@ -57,7 +59,5 @@ pub fn handler(
 
     msg!("Transferred {} lamports to setter", setter_cut);
 
-    // Update the challenge account
-    ctx.accounts.challenge_account.setter_cut_claimed = true;
     Ok(())
 }

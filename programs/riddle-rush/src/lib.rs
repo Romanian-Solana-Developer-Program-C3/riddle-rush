@@ -38,4 +38,10 @@ pub mod riddle_rush {
     ) -> Result<()> {
         setter_claim::handler(ctx)
     }
+
+    pub fn submitter_claim(
+        ctx: Context<SubmitterClaim>
+    ) -> Result<()> {
+        submitter_claim::handler(ctx)
+    }
 }
