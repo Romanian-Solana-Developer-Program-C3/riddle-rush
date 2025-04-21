@@ -296,4 +296,59 @@ describe("riddle-rush", () => {
     assert.approximately(final_pda_balance, initial_pda_balance - player_share, 1e6);
     assert.equal(submission.claimed, true);    
   })
+
+  it("Close challenge - Happy path", async () => {
+    //Create a corresponding challenge account
+    const challenge_id = new BN(5);
+    const question = "1 * (3 - 4.5)";
+    const now = Math.floor(Date.now() / 1000);
+
+    //100 seconds to make the submission
+    const sub_deadline = new BN(now + 1);
+    const ans_deadline = new BN(now + 2);
+    const claim_deadline = new BN(now + 3);
+    
+    const challengePda = PublicKey.findProgramAddressSync(
+      [Buffer.from("challenge"), challenge_id.toArrayLike(Buffer, "le", 8)],
+      program.programId
+    )[0];
+
+    accounts.challengeAccount = challengePda;
+
+    const txCreate = await program.methods
+    .createChallenge(challenge_id, question, sub_deadline, ans_deadline, claim_deadline, entry_fee)
+    .accounts({ ...accounts})
+    .signers([setter])
+    .rpc();
+
+    await provider.connection.confirmTransaction(txCreate, "confirmed");
+    console.log("Your create transaction signature", txCreate);
+
+    // Wait for 5 seconds
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    
+    const initial_setter_balance = await provider.connection.getBalance(setter.publicKey);
+    const initial_pda_balance = await provider.connection.getBalance(challengePda);
+    console.log("Initial setter balance", initial_setter_balance);
+    console.log("Initial pda balance", initial_pda_balance);
+  
+    const tx = await program.methods
+      .setterCloseChallenge()
+      .accounts({ ...accounts})
+      .signers([setter])
+      .rpc();
+      
+    await provider.connection.confirmTransaction(tx, "confirmed");
+    
+    console.log("Your transaction signature", tx);
+
+    const final_setter_balance = await provider.connection.getBalance(setter.publicKey);
+    const final_pda_balance = await provider.connection.getBalance(challengePda);
+    
+    console.log("Final setter balance", final_setter_balance);
+    console.log("Final pda balance", final_pda_balance);
+    assert.approximately(final_setter_balance, initial_setter_balance + initial_pda_balance, 1e6);
+    assert.equal(final_pda_balance, 0);
+  });
 });

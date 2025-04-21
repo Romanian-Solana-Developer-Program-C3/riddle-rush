@@ -17,10 +17,11 @@ pub struct SubmitterClaim<'info> {
     pub challenge_account: Account<'info, ChallengeAccount>,
     #[account(
         mut,
+        // close = submitter, //uncomment after verify solution PR
         constraint = submission_account.submitter == submitter.key(),
         constraint = submission_account.challenge_id == challenge_account.id,
         constraint = submission_account.claimed == false,
-        // constraint = submission_account.answer_correct == true, // Uncomment this line after other PR
+        // constraint = submission_account.answer_correct == true, // Uncomment this line after verify solution PR
         seeds = [b"submission", challenge_account.key().as_ref(), submitter.key().as_ref()],
         bump,
     )]
