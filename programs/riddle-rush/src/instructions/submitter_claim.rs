@@ -20,7 +20,6 @@ pub struct SubmitterClaim<'info> {
         constraint = submission_account.submitter == submitter.key(),
         constraint = submission_account.challenge_id == challenge_account.id,
         constraint = submission_account.claimed == false,
-        constraint = submission_account.answer_correct == true, // Uncomment this line after other PR
         seeds = [b"submission", challenge_account.key().as_ref(), submitter.key().as_ref()],
         bump,
     )]
@@ -47,7 +46,13 @@ pub fn handler(
     // Calculate the setter's cut
     let setter_cut = ctx.accounts.challenge_account.pot * SETTER_CUT / 100;
 
-    let num_players = ctx.accounts.challenge_account.correct_submissions;
+    let num_players;
+    if ctx.accounts.challenge_account.correct_submissions == 0 {
+        // If no players have answered correctly, every player gets their entry fee back
+        num_players = (ctx.accounts.challenge_account.pot / ctx.accounts.challenge_account.entry_fee) - 1;
+    } else {
+        num_players = ctx.accounts.challenge_account.correct_submissions;
+    }
 
     // Calculate the submitter's share
     // note: no division by zero becuase the constraint for the submission ensures num_players > 0
