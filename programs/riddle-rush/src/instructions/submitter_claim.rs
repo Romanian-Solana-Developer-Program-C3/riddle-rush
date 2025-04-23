@@ -17,6 +17,7 @@ pub struct SubmitterClaim<'info> {
     pub challenge_account: Account<'info, ChallengeAccount>,
     #[account(
         mut,
+        // close = submitter, //uncomment after verify solution PR
         constraint = submission_account.submitter == submitter.key(),
         constraint = submission_account.challenge_id == challenge_account.id,
         constraint = submission_account.claimed == false,
@@ -46,7 +47,7 @@ pub fn handler(
     // Calculate the setter's cut
     let setter_cut = ctx.accounts.challenge_account.pot * SETTER_CUT / 100;
 
-    let num_players = ctx.accounts.challenge_account.correct_submissions;
+    let mut num_players = ctx.accounts.challenge_account.correct_submissions;
 
     if num_players == 0 {
         // If no players have answered correctly, every player gets their entry fee back

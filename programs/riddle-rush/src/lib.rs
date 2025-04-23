@@ -45,6 +45,12 @@ pub mod riddle_rush {
         submitter_claim::handler(ctx)
     }
 
+    pub fn setter_close_challenge(
+        ctx: Context<SetterClose>
+    ) -> Result<()> {
+        setter_close_challenge::handler(ctx)
+    }
+    
     pub fn challenge_solution_reveal(
         ctx: Context<ChallengeSolutionReveal>,
         id: u64,
