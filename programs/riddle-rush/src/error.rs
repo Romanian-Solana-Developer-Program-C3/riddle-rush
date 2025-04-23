@@ -24,6 +24,18 @@ pub enum RiddleRushError {
     WithdrawTooLate,
     #[msg("Insufficient funds in the challenge account.")]
     InsufficientFunds,
+    #[msg("Solution reveal deadline has not been met.")]
+    SolutionRevealDeadlineNotMet,
+    #[msg("This submission has already been revealed.")]
+    SubmissionAlreadyRevealed,
+    #[msg("The transaction sender is not the submitter.")]
+    NotTheSubmitter,
+    #[msg("The solution has not been revealed yet.")]
+    SolutionNotRevealed,
+    #[msg("The answer doesn't match the encrypted answer.")]
+    AnswerMismatch,
+    #[msg("No correct submissions.")]
+    ZeroCorrectSubmissions
 }
 
 

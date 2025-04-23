@@ -20,7 +20,7 @@ pub struct SubmitterClaim<'info> {
         constraint = submission_account.submitter == submitter.key(),
         constraint = submission_account.challenge_id == challenge_account.id,
         constraint = submission_account.claimed == false,
-        // constraint = submission_account.answer_correct == true, // Uncomment this line after other PR
+        constraint = submission_account.answer_correct == true, // Uncomment this line after other PR
         seeds = [b"submission", challenge_account.key().as_ref(), submitter.key().as_ref()],
         bump,
     )]
@@ -47,10 +47,10 @@ pub fn handler(
     // Calculate the setter's cut
     let setter_cut = ctx.accounts.challenge_account.pot * SETTER_CUT / 100;
 
-    //Calculate number of players minus the setter
-    let num_players = (ctx.accounts.challenge_account.pot / ctx.accounts.challenge_account.entry_fee) - 1;
+    let num_players = ctx.accounts.challenge_account.correct_submissions;
 
     // Calculate the submitter's share
+    // note: no division by zero becuase the constraint for the submission ensures num_players > 0
     let submitter_share = (ctx.accounts.challenge_account.pot - setter_cut) / num_players;
     
     // Transfer lamports from challenge_account (PDA) to setter
