@@ -17,10 +17,12 @@ describe("riddle-rush", () => {
 
   const setter = Keypair.generate();
   const submitter = Keypair.generate();
+  const user = Keypair.generate();
 
   let accounts: Record<string, PublicKey> = {
     setter: setter.publicKey,
     submitter: submitter.publicKey,
+    user: user.publicKey,
   };
 
   const fundAmount = 1e8;
@@ -59,6 +61,22 @@ describe("riddle-rush", () => {
     )
 
     console.log(`Funded submitter account with ${fundAmount / LAMPORTS_PER_SOL} SOL:`, txSignature);
+
+    fundTx = new Transaction().add(
+      SystemProgram.transfer({
+        fromPubkey: provider.wallet.publicKey,
+        toPubkey: user.publicKey,
+        lamports: fundAmount,
+      })
+    );
+
+    txSignature = await sendAndConfirmTransaction(
+      provider.connection,
+      fundTx,
+      [provider.wallet.payer],
+    )
+
+    console.log(`Funded user account with ${fundAmount / LAMPORTS_PER_SOL} SOL:`, txSignature);
 
   })
 
@@ -133,7 +151,7 @@ describe("riddle-rush", () => {
     accounts.challengeAccount = challengePda;
 
     //Encrypt the answer using a nonce
-    const nonce = 111;
+    const nonce = "111";
     const answer = "1.5";
     const encrypted_answer = encrypt(answer, nonce);
     
@@ -174,8 +192,8 @@ describe("riddle-rush", () => {
     const now = Math.floor(Date.now() / 1000);
 
     //100 seconds to make the submission
-    const sub_deadline = new BN(now + 1);
-    const ans_deadline = new BN(now + 2);
+    const sub_deadline = new BN(now + 5);
+    const ans_deadline = new BN(now + 6);
     const claim_deadline = new BN(now + 102);
     
     const challengePda = PublicKey.findProgramAddressSync(
@@ -195,7 +213,7 @@ describe("riddle-rush", () => {
     console.log("Your create transaction signature", txCreate);
 
     // Wait for 5 seconds
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise(resolve => setTimeout(resolve, 10000));
 
     const initial_setter_balance = await provider.connection.getBalance(setter.publicKey);
     const initial_pda_balance = await provider.connection.getBalance(challengePda);
@@ -210,14 +228,115 @@ describe("riddle-rush", () => {
     console.log("Your transaction signature", tx);
 
     const challenge = await program.account.challengeAccount.fetch(challengePda);
-    const initial_challenge_pot = challenge.pot;
     //After the 10 percent cut
-    const expected_challenge_pot = initial_challenge_pot.sub(initial_challenge_pot.div(new BN(10)));
     const final_setter_balance = await provider.connection.getBalance(setter.publicKey);
     const final_pda_balance = await provider.connection.getBalance(challengePda);
+    const pot = challenge.pot.toNumber();
 
     assert.equal(challenge.setterCutClaimed, true);
     assert.isAbove(final_setter_balance, initial_setter_balance);
-    assert.isBelow(final_pda_balance, initial_pda_balance);
+    assert.approximately(final_pda_balance, initial_pda_balance - (pot/10), 1e6);
   });
+
+  it("Submitter claim -- Happy path", async () => {
+    //Create a corresponding challenge account
+    const challenge_id = new BN(4);
+    const question = "1 * (3 - 4.5)";
+    const now = Math.floor(Date.now() / 1000);
+
+    //100 seconds to make the submission
+    const sub_deadline = new BN(now + 5);
+    const ans_deadline = new BN(now + 6);
+    const claim_deadline = new BN(now + 102);
+    
+    const challengePda = PublicKey.findProgramAddressSync(
+      [Buffer.from("challenge"), challenge_id.toArrayLike(Buffer, "le", 8)],
+      program.programId
+    )[0];
+
+    const submissionPda = PublicKey.findProgramAddressSync(
+      [Buffer.from("submission"), challengePda.toBuffer(), submitter.publicKey.toBuffer()],
+      program.programId
+    )[0];
+
+    accounts.submissionAccount = submissionPda;
+    accounts.challengeAccount = challengePda;
+
+
+    const txCreate = await program.methods
+    .createChallenge(challenge_id, question, sub_deadline, ans_deadline, claim_deadline, entry_fee)
+    .accounts({ ...accounts})
+    .signers([setter])
+    .rpc();
+
+    await provider.connection.confirmTransaction(txCreate, "confirmed");
+    console.log("Your create transaction signature", txCreate);
+
+    //Encrypt the answer using a nonce
+    const nonce = "111";
+    const answer = "-1.5";
+    const encrypted_answer = encrypt(answer, nonce);
+    
+    const txSubmit = await program.methods
+      .createSubmission(Array.from(encrypted_answer))
+      .accounts({ ...accounts})
+      .signers([submitter])
+      .rpc();
+
+    await provider.connection.confirmTransaction(txSubmit, "confirmed");
+    console.log("Your submit transaction signature", txSubmit);
+    
+    // Wait for 10 seconds
+    await new Promise(resolve => setTimeout(resolve, 10000));
+
+    const txChallengeReveal = await program.methods
+      .challengeSolutionReveal(challenge_id)
+      .accounts({ ...accounts})
+      .signers([user])
+      .rpc();
+    await provider.connection.confirmTransaction(txChallengeReveal, "confirmed");
+    let challenge = await program.account.challengeAccount.fetch(challengePda);
+
+    assert.equal(challenge.solution, answer);
+    console.log("Your challenge reveal transaction signature", txChallengeReveal);
+
+
+    const txSubmissionReveal = await program.methods
+      .submissionSolutionReveal(nonce, answer)
+      .accounts({ ...accounts})
+      .signers([submitter])
+      .rpc();
+
+    await provider.connection.confirmTransaction(txSubmissionReveal, "confirmed");
+    challenge = await program.account.challengeAccount.fetch(challengePda);
+    let submission = await program.account.submissionAccount.fetch(submissionPda);
+
+    console.log("Your submission reveal transaction signature", txSubmissionReveal);
+    assert.equal(submission.answerCorrect, true);
+    assert.equal(submission.revealed, true);
+    assert.equal(challenge.correctSubmissions.toString(), "1");
+
+    const initial_submitter_balance = await provider.connection.getBalance(submitter.publicKey);
+    const initial_pda_balance = await provider.connection.getBalance(challengePda);
+  
+    const tx = await program.methods
+      .submitterClaim()
+      .accounts({ ...accounts})
+      .signers([submitter])
+      .rpc();
+    await provider.connection.confirmTransaction(tx, "confirmed");
+    console.log("Your submitter claim transaction signature", tx);
+
+    submission = await program.account.submissionAccount.fetch(submissionPda);
+    const final_submitter_balance = await provider.connection.getBalance(submitter.publicKey);
+    const final_pda_balance = await provider.connection.getBalance(challengePda);
+    //calculate the number of players
+    
+    const players = (challenge.pot.toNumber() / challenge.entryFee.toNumber()) - 1; // not counting the setter
+    const player_share = (challenge.pot.toNumber() - (challenge.pot.toNumber() / 10)) / players; // 10 percent cut for the setter
+
+    assert.isAbove(final_submitter_balance, initial_submitter_balance);
+    assert.approximately(final_pda_balance, initial_pda_balance - player_share, 1e6);
+    assert.equal(submission.claimed, true);    
+  })
 });

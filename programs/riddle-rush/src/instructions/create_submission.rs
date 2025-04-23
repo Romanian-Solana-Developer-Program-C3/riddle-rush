@@ -33,6 +33,14 @@ pub fn handler(
         RiddleRushError::SubmissionDeadlinePassed
     );
 
+    let submitter_info = &mut ctx.accounts.submitter.to_account_info();
+
+    // Ensure the submitter has enough lamports
+    require!(
+        submitter_info.lamports() >= ctx.accounts.challenge_account.entry_fee,
+        RiddleRushError::InsufficientFunds
+    );
+
     ctx.accounts.submission_account.set_inner(
         SubmissionAccount {
             challenge_id: ctx.accounts.challenge_account.id,

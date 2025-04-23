@@ -38,4 +38,25 @@ pub mod riddle_rush {
     ) -> Result<()> {
         setter_claim::handler(ctx)
     }
+
+    pub fn submitter_claim(
+        ctx: Context<SubmitterClaim>
+    ) -> Result<()> {
+        submitter_claim::handler(ctx)
+    }
+
+    pub fn challenge_solution_reveal(
+        ctx: Context<ChallengeSolutionReveal>,
+        id: u64,
+    ) -> Result<()> {
+        challenge_solution_reveal::handler(ctx, id)
+    }
+
+    pub fn submission_solution_reveal(
+        ctx: Context<SubmissionSolutionReveal>,
+        nonce: String,
+        plaintext_answer: String,
+    ) -> Result<()> {
+        submission_solution_reveal::handler(ctx, nonce, plaintext_answer)
+    }
 }
