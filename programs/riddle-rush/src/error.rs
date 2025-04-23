@@ -18,6 +18,12 @@ pub enum RiddleRushError {
     ZeroEntryFee,
     #[msg("Invalid mathematical expression.")]
     InvalidExpression,
+    #[msg("User attempting to withdraw before answer reveal deadline.")]
+    WithdrawTooEarly,
+    #[msg("User attempting to withdraw after prize claim deadline.")]
+    WithdrawTooLate,
+    #[msg("Insufficient funds in the challenge account.")]
+    InsufficientFunds,
 }
 
 
