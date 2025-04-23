@@ -46,12 +46,11 @@ pub fn handler(
     // Calculate the setter's cut
     let setter_cut = ctx.accounts.challenge_account.pot * SETTER_CUT / 100;
 
-    let num_players;
-    if ctx.accounts.challenge_account.correct_submissions == 0 {
+    let num_players = ctx.accounts.challenge_account.correct_submissions;
+
+    if num_players == 0 {
         // If no players have answered correctly, every player gets their entry fee back
         num_players = (ctx.accounts.challenge_account.pot / ctx.accounts.challenge_account.entry_fee) - 1;
-    } else {
-        num_players = ctx.accounts.challenge_account.correct_submissions;
     }
 
     // Calculate the submitter's share
