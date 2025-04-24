@@ -9,12 +9,15 @@ import {
   WalletMultiButton,
 } from "@solana/wallet-adapter-react-ui";
 import { clusterApiUrl } from "@solana/web3.js";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom"; // Import routing components
 import "./App.css";
 
 // Default styles that can be overridden by your app
 import "@solana/wallet-adapter-react-ui/styles.css";
 
 import MainPage from "./components/main_page";
+import CreateSubmission from "./components/create_submission"; // Import CreateSubmission component
+import SubmissionReveal from "./components/submission_reveal"; // Import SubmissionReveal component
 
 function App() {
   // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'.
@@ -34,9 +37,15 @@ function App() {
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
-          <WalletMultiButton />
-          <h1>Riddle Rush</h1>
-          <MainPage />
+          <Router>
+            <WalletMultiButton />
+            <h1>Riddle Rush</h1>
+            <Routes>
+              <Route path="/" element={<MainPage />} />
+              <Route path="/create-submission" element={<CreateSubmission />} />
+              <Route path="/submission-reveal" element={<SubmissionReveal />} />
+            </Routes>
+          </Router>
         </WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>

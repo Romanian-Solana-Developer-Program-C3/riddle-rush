@@ -1,6 +1,6 @@
 import { IdlAccounts, Program, AnchorProvider, setProvider, Idl } from "@coral-xyz/anchor";
 import IDL from "./idl.json";
-import { RiddleRush } from "./riddle_rush";
+import { RiddleRush } from "./riddle_rush.ts";
 import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
 
@@ -24,7 +24,7 @@ export const useProgram = () => {
     provider
   );
 
-  return { program };
+  return { program, provider };
   // const [counterPDA] = PublicKey.findProgramAddressSync(
   //   [Buffer.from("counter")],
   //   program.programId,

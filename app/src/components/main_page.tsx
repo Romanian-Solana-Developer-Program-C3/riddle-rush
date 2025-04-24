@@ -3,6 +3,7 @@ import { useProgram } from "../anchor/setup";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { Buffer } from "buffer";
+import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
 
 const GLOBAL_ID = 10; // Fixed global ID for now
 
@@ -118,13 +119,84 @@ const ChallengeItem: React.FC<{ challenge: any; isExpanded: boolean; toggleExpan
 // Action button component
 const ActionButton: React.FC<{ challenge: any }> = ({ challenge }) => {
   const now = Math.floor(Date.now() / 1000);
+  const navigate = useNavigate(); // Hook for navigation
+  const programContext = useProgram();
+  const wallet = programContext?.provider?.wallet;
+
+  const handleClaim = async () => {
+    if (!wallet) {
+      alert("Wallet not connected");
+      return;
+    }
+
+    const userPublicKey = wallet.publicKey.toBase58();
+
+    //derive the challenge pda using the challenge id then derive the submission pda
+    // to check if the user is a submitter
+    const [challengePda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("challenge"), new BN(challenge.id).toArrayLike(Buffer, "le", 8)],
+        programContext?.program.programId
+    );
+    const [submissionPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("submission"), challengePda.toBuffer(), wallet.publicKey.toBuffer()],
+        programContext?.program.programId
+    );
+    const submission = await programContext?.program.account.submissionAccount.fetch(submissionPda);
+    const isSubmitter = submission.submitter.toBase58() === userPublicKey;
+
+    // Check if the user is the setter
+    if (challenge.setter.toBase58() === userPublicKey) {
+      try {
+        // Call setter_claim function
+        await programContext?.program.methods
+          .setterClaim()
+          .accounts({
+            challengeAccount: challengePda,
+            setter: wallet.publicKey,
+          })
+          .rpc();
+        alert("Setter claim successful!");
+      } catch (error) {
+        console.error("Error in setter claim:", error);
+        alert("Failed to claim as setter.");
+      }
+    }
+    // Check if the user is a submitter
+    else if (isSubmitter) {
+      try {
+        // Call submitter_claim function
+        await programContext?.program.methods
+          .submitterClaim()
+          .accountsPartial ({
+            challengeAccount: challengePda,
+            submissionAccount: submissionPda,
+            submitter: wallet.publicKey,
+          })
+          .rpc();
+        alert("Submitter claim successful!");
+      } catch (error) {
+        console.error("Error in submitter claim:", error);
+        alert("Failed to claim as submitter.");
+      }
+    } else {
+      alert("User not part of challenge");
+    }
+  };
 
   if (now < challenge.submissionDeadline.toNumber()) {
-    return <button>Submit Answer</button>;
+    return (
+      <button onClick={() => navigate(`/create-submission`, { state: { challenge } })}>
+        Submit Answer
+      </button>
+    );
   } else if (now < challenge.answerRevealDeadline.toNumber()) {
-    return <button>Reveal Solution</button>;
+    return (
+      <button onClick={() => navigate(`/submission-reveal`, { state: { challenge } })}>
+        Reveal Solution
+      </button>
+    );
   } else if (now < challenge.claimDeadline.toNumber()) {
-    return <button>Claim Prize</button>;
+    return <button onClick={handleClaim}>Claim Prize</button>;
   } else {
     return <button disabled>Challenge Closed</button>;
   }
