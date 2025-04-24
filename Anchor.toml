@@ -8,11 +8,14 @@ skip-lint = false
 [programs.localnet]
 riddle_rush = "35ELX25de2z4XxDYW1wizysNjsjm2WUrfbPgvvJkDtbZ"
 
+[programs.devnet]
+riddle_rush = "35ELX25de2z4XxDYW1wizysNjsjm2WUrfbPgvvJkDtbZ"
+
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
