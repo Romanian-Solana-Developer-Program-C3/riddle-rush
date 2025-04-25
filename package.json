@@ -6,7 +6,13 @@
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.0",
-    "js-sha3": "^0.9.3"
+    "@solana/wallet-adapter-base": "^0.9.26",
+    "@solana/wallet-adapter-react": "^0.15.38",
+    "@solana/wallet-adapter-react-ui": "^0.9.38",
+    "@solana/wallet-adapter-wallets": "^0.19.36",
+    "@solana/web3.js": "1",
+    "js-sha3": "^0.9.3",
+    "react": "^19.1.0"
   },
   "devDependencies": {
     "@types/bn.js": "^5.1.0",
