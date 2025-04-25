@@ -1,10 +1,8 @@
-import { IdlAccounts, Program, AnchorProvider, setProvider, Idl } from "@coral-xyz/anchor";
+import { Program, AnchorProvider, setProvider } from "@coral-xyz/anchor";
 import IDL from "./idl.json";
 import { RiddleRush } from "./riddle_rush.ts";
-import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
+import { clusterApiUrl, Connection } from "@solana/web3.js";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
-
-const programId = new PublicKey("35ELX25de2z4XxDYW1wizysNjsjm2WUrfbPgvvJkDtbZ");
 
 export const useProgram = () => {
   const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
@@ -25,10 +23,6 @@ export const useProgram = () => {
   );
 
   return { program, provider };
-  // const [counterPDA] = PublicKey.findProgramAddressSync(
-  //   [Buffer.from("counter")],
-  //   program.programId,
-  // );
 }
 
 // This is just a TypeScript type for the Counter data structure based on the IDL
