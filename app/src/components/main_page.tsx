@@ -4,6 +4,8 @@ import { PublicKey, Connection, clusterApiUrl } from "@solana/web3.js";
 import BN from "bn.js";
 import { Buffer } from "buffer";
 import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
+import { Program } from "@coral-xyz/anchor";
+import { RiddleRush } from "../anchor/riddle_rush";
 
 const GLOBAL_ID = 10; // Fixed global ID for now
 
@@ -138,55 +140,71 @@ const ActionButton: React.FC<{ challenge: any }> = ({ challenge }) => {
 
     const userPublicKey = wallet.publicKey.toBase58();
 
-    //derive the challenge pda using the challenge id then derive the submission pda
-    // to check if the user is a submitter
-    const [challengePda] = PublicKey.findProgramAddressSync(
+    try {
+      // Derive the challenge PDA
+      const [challengePda] = PublicKey.findProgramAddressSync(
         [Buffer.from("challenge"), new BN(challenge.id).toArrayLike(Buffer, "le", 8)],
         programContext?.program.programId
-    );
-    const [submissionPda] = PublicKey.findProgramAddressSync(
+      );
+
+      console.log("Derived Challenge PDA:", challengePda.toBase58());
+
+      // Check if the user is the setter
+      if (challenge.setter.toBase58() === userPublicKey) {
+        try {
+          // Call setter_claim function
+          await programContext?.program.methods
+            .setterClaim()
+            .accounts({
+              challengeAccount: challengePda,
+              setter: wallet.publicKey,
+            })
+            .rpc();
+          alert("Setter claim successful!");
+        } catch (error) {
+          console.error("Error in setter claim:", error);
+          alert("Failed to claim as setter.");
+        }
+        return;
+      }
+
+      // Derive the submission PDA
+      const [submissionPda] = PublicKey.findProgramAddressSync(
         [Buffer.from("submission"), challengePda.toBuffer(), wallet.publicKey.toBuffer()],
         programContext?.program.programId
-    );
-    const submission = await programContext?.program.account.submissionAccount.fetch(submissionPda);
-    const isSubmitter = submission.submitter.toBase58() === userPublicKey;
+      );
 
-    // Check if the user is the setter
-    if (challenge.setter.toBase58() === userPublicKey) {
+      // Check if the user is a submitter
+      let isSubmitter = false;
       try {
-        // Call setter_claim function
-        await programContext?.program.methods
-          .setterClaim()
-          .accounts({
-            challengeAccount: challengePda,
-            setter: wallet.publicKey,
-          })
-          .rpc();
-        alert("Setter claim successful!");
+        const submission = await programContext?.program.account.submissionAccount.fetch(submissionPda);
+        isSubmitter = submission.submitter.toBase58() === userPublicKey;
       } catch (error) {
-        console.error("Error in setter claim:", error);
-        alert("Failed to claim as setter.");
+        console.warn("No submission account found for this user:", error);
       }
-    }
-    // Check if the user is a submitter
-    else if (isSubmitter) {
-      try {
-        // Call submitter_claim function
-        await programContext?.program.methods
-          .submitterClaim()
-          .accountsPartial ({
-            challengeAccount: challengePda,
-            submissionAccount: submissionPda,
-            submitter: wallet.publicKey,
-          })
-          .rpc();
-        alert("Submitter claim successful!");
-      } catch (error) {
-        console.error("Error in submitter claim:", error);
-        alert("Failed to claim as submitter.");
+
+      if (isSubmitter) {
+        try {
+          // Call submitter_claim function
+          await programContext?.program.methods
+            .submitterClaim()
+            .accountsPartial ({
+              challengeAccount: challengePda,
+              submissionAccount: submissionPda,
+              submitter: wallet.publicKey,
+            })
+            .rpc();
+          alert("Submitter claim successful!");
+        } catch (error) {
+          console.error("Error in submitter claim:", error);
+          alert("Failed to claim as submitter.");
+        }
+      } else {
+        alert("User is neither the setter nor a submitter for this challenge.");
       }
-    } else {
-      alert("User not part of challenge");
+    } catch (error) {
+      console.error("Error in handleClaim:", error);
+      alert("An error occurred while claiming the prize.");
     }
   };
 
