@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useProgram } from "../anchor/setup";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Connection, clusterApiUrl } from "@solana/web3.js";
 import BN from "bn.js";
 import { Buffer } from "buffer";
 import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
@@ -18,26 +18,33 @@ const MainPage: React.FC = () => {
   // Fetch challenges during the initial setup phase
   useEffect(() => {
     const fetchChallenges = async () => {
-      if (!program || hasFetchedChallenges.current) return;
+      if (hasFetchedChallenges.current) return;
 
-      const fetchedChallenges = [];
-      for (let challengeId = 1; challengeId <= GLOBAL_ID; challengeId++) {
-        try {
-          const [challengePda] = PublicKey.findProgramAddressSync(
-            [Buffer.from("challenge"), new BN(challengeId).toArrayLike(Buffer, "le", 8)],
-            program.programId
-          );
+      try {
+        // Use a direct connection to Solana Devnet
+        const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
 
-          const challenge = await program.account.challengeAccount.fetch(challengePda);
-          fetchedChallenges.push({ ...challenge, pda: challengePda });
-        } catch (error) {
-          console.error(`Error fetching challenge ${challengeId}:`, error);
+        const fetchedChallenges = [];
+        for (let challengeId = 1; challengeId <= GLOBAL_ID; challengeId++) {
+          try {
+            const [challengePda] = PublicKey.findProgramAddressSync(
+              [Buffer.from("challenge"), new BN(challengeId).toArrayLike(Buffer, "le", 8)],
+              program.programId
+            );
+
+            const challenge = await program.account.challengeAccount.fetch(challengePda);
+            fetchedChallenges.push({ ...challenge, pda: challengePda });
+          } catch (error) {
+            console.error(`Error fetching challenge ${challengeId}:`, error);
+          }
         }
-      }
 
-      setChallenges(fetchedChallenges);
-      setExpandedStates(new Array(fetchedChallenges.length).fill(false)); // Initialize all challenges as collapsed
-      hasFetchedChallenges.current = true; // Mark challenges as fetched
+        setChallenges(fetchedChallenges);
+        setExpandedStates(new Array(fetchedChallenges.length).fill(false)); // Initialize all challenges as collapsed
+        hasFetchedChallenges.current = true; // Mark challenges as fetched
+      } catch (error) {
+        console.error("Error fetching challenges:", error);
+      }
     };
 
     fetchChallenges();
