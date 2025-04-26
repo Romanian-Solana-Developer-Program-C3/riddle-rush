@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom"; // Import useNavigate for naviga
 import { Program } from "@coral-xyz/anchor";
 import { RiddleRush } from "../anchor/riddle_rush";
 
-const GLOBAL_ID = 10; // Fixed global ID for now
+const GLOBAL_ID = 20; // Fixed global ID for now
 
 const MainPage: React.FC = () => {
   const programContext = useProgram();
