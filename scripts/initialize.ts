@@ -32,12 +32,12 @@ async function main() {
         console.log('Global Config PDA:', globalConfigPda.toBase58());
 
         // Initialize the program
-        const tx = await program.methods
+        const tx = await (program as any).methods
             .initialize()
             .accounts({
                 authority: wallet.publicKey,
-                globalConfig: globalConfigPda,
-                systemProgram: SystemProgram.programId,
+                global_config: globalConfigPda,
+                system_program: SystemProgram.programId,
             })
             .rpc();
             

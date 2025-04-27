@@ -17,10 +17,6 @@ const formatSol = (lamports: number) => {
 // Get timezone abbreviation
 const timezoneAbbr = new Date().toLocaleTimeString('en-US', { timeZoneName: 'short' }).split(' ')[2];
 
-
-
-
-
 const MainPage: React.FC = () => {
   const programContext = useProgram();
   const program = programContext?.program;
@@ -31,20 +27,44 @@ const MainPage: React.FC = () => {
   useEffect(() => {
     const fetchChallenges = async () => {
       if (hasFetchedChallenges.current) return;
+      if (!program) {
+        console.log("Program not initialized yet");
+        return;
+      }
 
       try {
         // Use a direct connection to Solana Devnet
         const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
 
+        // First fetch the global config to get the next_challenge_id
+        const [globalConfigPda] = PublicKey.findProgramAddressSync(
+          [Buffer.from("global_config")],
+          program.programId
+        );
+
+        console.log("Fetching global config from:", globalConfigPda.toBase58());
+        
+        if (!program.account) {
+          console.error("Program account not initialized");
+          return;
+        }
+
+        const globalConfig = await (program.account as any).globalConfig.fetch(globalConfigPda);
+        console.log("Global config:", globalConfig);
+        
+        const nextChallengeId = globalConfig.nextChallengeId.toNumber();
+        console.log("Next challenge ID:", nextChallengeId);
+
         const fetchedChallenges = [];
-        for (let challengeId = 1; challengeId <= GLOBAL_ID; challengeId++) {
+        for (let challengeId = 0; challengeId < nextChallengeId; challengeId++) {
           try {
             const [challengePda] = PublicKey.findProgramAddressSync(
               [Buffer.from("challenge"), new BN(challengeId).toArrayLike(Buffer, "le", 8)],
               program.programId
             );
 
-            const challenge = await program.account.challengeAccount.fetch(challengePda);
+            console.log(`Fetching challenge ${challengeId} from:`, challengePda.toBase58());
+            const challenge = await (program.account as any).challengeAccount.fetch(challengePda);
             fetchedChallenges.push({ ...challenge, pda: challengePda });
           } catch (error) {
             console.error(`Error fetching challenge ${challengeId}:`, error);
@@ -224,9 +244,9 @@ const ActionButton: React.FC<{ challenge: any }> = ({ challenge }) => {
         try {
           // Call setter_claim function
           await programContext?.program.methods
-            .setterClaim()
+            .setter_claim()
             .accounts({
-              challengeAccount: challengePda,
+              challenge_account: challengePda,
               setter: wallet.publicKey,
             })
             .rpc();
@@ -247,7 +267,7 @@ const ActionButton: React.FC<{ challenge: any }> = ({ challenge }) => {
       // Check if the user is a submitter
       let isSubmitter = false;
       try {
-        const submission = await programContext?.program.account.submissionAccount.fetch(submissionPda);
+        const submission = await programContext?.program.account.SubmissionAccount.fetch(submissionPda);
         isSubmitter = submission.submitter.toBase58() === userPublicKey;
       } catch (error) {
         console.warn("No submission account found for this user:", error);
@@ -257,10 +277,10 @@ const ActionButton: React.FC<{ challenge: any }> = ({ challenge }) => {
         try {
           // Call submitter_claim function
           await programContext?.program.methods
-            .submitterClaim()
-            .accountsPartial ({
-              challengeAccount: challengePda,
-              submissionAccount: submissionPda,
+            .submitter_claim()
+            .accountsPartial({
+              challenge_account: challengePda,
+              submission_account: submissionPda,
               submitter: wallet.publicKey,
             })
             .rpc();
@@ -292,9 +312,9 @@ const ActionButton: React.FC<{ challenge: any }> = ({ challenge }) => {
     if (challenge.setter.toBase58() === wallet.publicKey.toBase58()) {
       try {
         await programContext?.program.methods
-          .setterCloseChallenge()
+          .setter_close_challenge()
           .accountsPartial({
-            challengeAccount: challengePda,
+            challenge_account: challengePda,
             setter: wallet.publicKey,
           })
           .rpc();

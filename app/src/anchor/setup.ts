@@ -2,24 +2,35 @@ import { Program, AnchorProvider, setProvider } from "@coral-xyz/anchor";
 import IDL from "./idl.json";
 import { RiddleRush } from "./riddle_rush.ts";
 import { clusterApiUrl, Connection, Keypair } from "@solana/web3.js";
-import { useAnchorWallet } from "@solana/wallet-adapter-react";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useMemo } from "react";
 
 export const useProgram = () => {
-  const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
+  const connection = useMemo(() => new Connection(clusterApiUrl("devnet"), "confirmed"), []);
+  const wallet = useWallet();
 
-  const wallet = useAnchorWallet();
+  const provider = useMemo(() => {
+    if (!wallet.publicKey || !wallet.signTransaction || !wallet.signAllTransactions) {
+      const dummyWallet = {
+        publicKey: Keypair.generate().publicKey,
+        signTransaction: async (tx: any) => tx,
+        signAllTransactions: async (txs: any[]) => txs,
+      };
+      return new AnchorProvider(connection, dummyWallet, {});
+    }
 
-  // If the wallet is not connected, use a dummy wallet
-  const dummyWallet = {
-    publicKey: Keypair.generate().publicKey,
-    signTransaction: async (tx: any) => tx,
-    signAllTransactions: async (txs: any[]) => txs,
-  };
+    const anchorWallet = {
+      publicKey: wallet.publicKey,
+      signTransaction: wallet.signTransaction,
+      signAllTransactions: wallet.signAllTransactions,
+    };
+    return new AnchorProvider(connection, anchorWallet, {});
+  }, [connection, wallet]);
 
-  const provider = new AnchorProvider(connection, wallet || dummyWallet, {});
-  setProvider(provider);
-
-  const program = new Program<RiddleRush>(IDL as RiddleRush, provider);
+  const program = useMemo(() => {
+    setProvider(provider);
+    return new Program<RiddleRush>(IDL as RiddleRush, provider);
+  }, [provider]);
 
   return { program, provider };
 }

@@ -4,12 +4,19 @@ import { useProgram } from '../anchor/setup';
 import { PublicKey, SystemProgram } from '@solana/web3.js';
 import BN from 'bn.js';
 import { Buffer } from 'buffer';
+import { useWallet } from '@solana/wallet-adapter-react';
+import IDL from '../anchor/idl.json';
+
+// Polyfill Buffer for browser
+if (typeof window !== 'undefined') {
+  window.Buffer = Buffer;
+}
 
 const CreateChallenge: React.FC = () => {
   const navigate = useNavigate();
   const programContext = useProgram();
   const program = programContext?.program;
-  const wallet = programContext?.provider?.wallet;
+  const wallet = useWallet();
 
   const [question, setQuestion] = useState('1 + 1 * 2');
   const [entryFee, setEntryFee] = useState('1000');
@@ -17,6 +24,50 @@ const CreateChallenge: React.FC = () => {
   const [answerRevealDeadline, setAnswerRevealDeadline] = useState('');
   const [claimDeadline, setClaimDeadline] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const initializeProgram = async () => {
+    if (!program || !wallet.publicKey) return false;
+
+    try {
+      const [globalConfigPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from('global_config')],
+        program.programId
+      );
+
+      // Try to fetch the global config account
+      try {
+        const globalConfig = await (program.account as any).globalConfig.fetch(globalConfigPda);
+        console.log('Existing GlobalConfig found:', globalConfig);
+        return true; // Account exists
+      } catch (e) {
+        // Account doesn't exist, initialize it
+        console.log('GlobalConfig not found, initializing program...');
+        try {
+          const tx = await program.methods
+            .initialize()
+            .accounts({
+              authority: wallet.publicKey,
+              global_config: globalConfigPda,
+              system_program: SystemProgram.programId,
+            } as any)
+            .rpc();
+          console.log('Program initialized:', tx);
+
+          // Verify initialization
+          const globalConfig = await (program.account as any).globalConfig.fetch(globalConfigPda);
+          console.log('Initialized GlobalConfig:', globalConfig);
+          return true;
+        } catch (initError) {
+          console.error('Error during program initialization:', initError);
+          return false;
+        }
+      }
+    } catch (error) {
+      console.error('Error in initializeProgram:', error);
+      return false;
+    }
+  };
 
   useEffect(() => {
     // Set default dates
@@ -30,10 +81,58 @@ const CreateChallenge: React.FC = () => {
     setClaimDeadline(claimDate.toISOString().slice(0, 16));
   }, []);
 
+  useEffect(() => {
+    // Log program initialization status
+    console.log('Program Context:', programContext);
+    console.log('Program:', program);
+    if (program) {
+      console.log('Program Accounts:', program.account);
+      console.log('Available Program Methods:', program.methods);
+      console.log('Program ID:', program.programId.toBase58());
+      console.log('Available Account Types:', Object.keys(program.account));
+      console.log('Program Account Details:', {
+        globalConfig: (program.account as any).globalConfig,
+        challengeAccount: (program.account as any).challengeAccount,
+        submissionAccount: (program.account as any).submissionAccount
+      });
+    } else {
+      console.warn('Program not initialized properly');
+    }
+  }, [programContext, program]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!wallet || !program) {
-      alert('Please connect your wallet first');
+    setError(null);
+
+    if (!wallet.publicKey) {
+      setError('Please connect your wallet first');
+      return;
+    }
+
+    if (!program) {
+      setError('Program not initialized. Please check your wallet connection and try again.');
+      return;
+    }
+
+    if (!program.account) {
+      console.error('Program accounts not available:', program);
+      setError('Program account not initialized properly. Please refresh the page and try again.');
+      return;
+    }
+
+    // Log available accounts
+    console.log('Available accounts:', Object.keys(program.account));
+    
+    if (!(program.account as any).globalConfig) {
+      console.error('GlobalConfig account not found. Available accounts:', Object.keys(program.account));
+      setError('Global config not found in program account. Please check program deployment.');
+      return;
+    }
+
+    // Check if we need to initialize the program
+    const isInitialized = await initializeProgram();
+    if (!isInitialized) {
+      setError('Failed to initialize program. Please try again.');
       return;
     }
 
@@ -45,7 +144,7 @@ const CreateChallenge: React.FC = () => {
       const claimTimestamp = Math.floor(new Date(claimDeadline).getTime() / 1000);
 
       // Convert entry fee to lamports (1 SOL = 1_000_000_000 lamports)
-      const entryFeeLamports = Math.floor(parseFloat(entryFee) * 1_000_000_000);
+      const entryFeeLamports = entryFee;
 
       // Get the global config PDA
       const [globalConfigPda] = PublicKey.findProgramAddressSync(
@@ -54,14 +153,20 @@ const CreateChallenge: React.FC = () => {
       );
 
       // Get the global config account to get the next_challenge_id
-      const globalConfig = await program.account.GlobalConfig.fetch(globalConfigPda);
-      const nextChallengeId = globalConfig.next_challenge_id;
+      const globalConfig = await (program.account as any).globalConfig.fetch(globalConfigPda);
+      console.log('Global Config:', globalConfig);
+      console.log('Global Config type:', typeof globalConfig);
+      console.log('Global Config keys:', Object.keys(globalConfig));
+      
+      const nextChallengeId = globalConfig.nextChallengeId;
+      console.log('Next Challenge ID:', nextChallengeId);
+      console.log('Next Challenge ID type:', typeof nextChallengeId);
 
       // Create PDA for the challenge using the next_challenge_id
       const [challengePda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from('challenge'),
-          new BN(nextChallengeId).toArrayLike(Buffer, 'le', 8)
+          nextChallengeId.toArrayLike(Buffer, 'le', 8)
         ],
         program.programId
       );
@@ -79,8 +184,8 @@ const CreateChallenge: React.FC = () => {
       console.log('Challenge PDA:', challengePda.toBase58());
 
       // Create the challenge
-      const tx = await program.methods
-        .create_challenge(
+      const tx = await (program.methods as any)
+        .createChallenge(
           question,
           new BN(submissionTimestamp),
           new BN(revealTimestamp),
@@ -92,7 +197,7 @@ const CreateChallenge: React.FC = () => {
           global_config: globalConfigPda,
           challenge_account: challengePda,
           system_program: SystemProgram.programId,
-        })
+        } as any)
         .rpc();
 
       console.log('Transaction signature:', tx);
@@ -107,14 +212,14 @@ const CreateChallenge: React.FC = () => {
         });
         // Show more specific error message
         if (error.message.includes('insufficient funds')) {
-          alert('Insufficient funds to create challenge. Please ensure you have enough SOL.');
+          setError('Insufficient funds to create challenge. Please ensure you have enough SOL.');
         } else if (error.message.includes('deadline')) {
-          alert('Invalid deadline configuration. Please check your dates.');
+          setError('Invalid deadline configuration. Please check your dates.');
         } else {
-          alert(`Failed to create challenge: ${error.message}`);
+          setError(`Failed to create challenge: ${error.message}`);
         }
       } else {
-        alert('Failed to create challenge. Please try again.');
+        setError('Failed to create challenge. Please try again.');
       }
     } finally {
       setIsSubmitting(false);
@@ -146,6 +251,19 @@ const CreateChallenge: React.FC = () => {
           marginBottom: "24px",
           color: "rgba(255, 255, 255, 0.9)",
         }}>Create New Challenge</h1>
+
+        {error && (
+          <div style={{
+            padding: "12px",
+            marginBottom: "20px",
+            borderRadius: "6px",
+            background: "rgba(255, 0, 0, 0.1)",
+            border: "1px solid rgba(255, 0, 0, 0.2)",
+            color: "rgba(255, 255, 255, 0.9)",
+          }}>
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} style={{
           display: "flex",
