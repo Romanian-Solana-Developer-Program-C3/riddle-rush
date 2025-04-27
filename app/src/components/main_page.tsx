@@ -5,7 +5,7 @@ import BN from "bn.js";
 import { Buffer } from "buffer";
 import { useNavigate } from "react-router-dom";
 
-const GLOBAL_ID = 10; // Fixed global ID for now
+const GLOBAL_ID = 10;
 
 // Helper function to format SOL amounts
 const formatSol = (lamports: number) => {
