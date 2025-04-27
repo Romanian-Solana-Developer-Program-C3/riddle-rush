@@ -11,7 +11,6 @@ import {
 import { clusterApiUrl } from "@solana/web3.js";
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import "./App.css";
-import Logo from "./components/Logo";
 
 // Default styles that can be overridden by your app
 import "@solana/wallet-adapter-react-ui/styles.css";
