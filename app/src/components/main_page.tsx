@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useProgram } from "../anchor/setup";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Connection, clusterApiUrl } from "@solana/web3.js";
 import BN from "bn.js";
 import { Buffer } from "buffer";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
+import { Program } from "@coral-xyz/anchor";
+import { RiddleRush } from "../anchor/riddle_rush";
 
-const GLOBAL_ID = 10;
+const GLOBAL_ID = 20; // Fixed global ID for now
 
 const MainPage: React.FC = () => {
   const programContext = useProgram();
@@ -15,25 +17,32 @@ const MainPage: React.FC = () => {
 
   useEffect(() => {
     const fetchChallenges = async () => {
-      if (!program || hasFetchedChallenges.current) return;
+      if (hasFetchedChallenges.current) return;
 
-      const fetchedChallenges = [];
-      for (let challengeId = 1; challengeId <= GLOBAL_ID; challengeId++) {
-        try {
-          const [challengePda] = PublicKey.findProgramAddressSync(
-            [Buffer.from("challenge"), new BN(challengeId).toArrayLike(Buffer, "le", 8)],
-            program.programId
-          );
+      try {
+        // Use a direct connection to Solana Devnet
+        const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
 
-          const challenge = await program.account.challengeAccount.fetch(challengePda);
-          fetchedChallenges.push({ ...challenge, pda: challengePda });
-        } catch (error) {
-          console.error(`Error fetching challenge ${challengeId}:`, error);
+        const fetchedChallenges = [];
+        for (let challengeId = 1; challengeId <= GLOBAL_ID; challengeId++) {
+          try {
+            const [challengePda] = PublicKey.findProgramAddressSync(
+              [Buffer.from("challenge"), new BN(challengeId).toArrayLike(Buffer, "le", 8)],
+              program.programId
+            );
+
+            const challenge = await program.account.challengeAccount.fetch(challengePda);
+            fetchedChallenges.push({ ...challenge, pda: challengePda });
+          } catch (error) {
+            console.error(`Error fetching challenge ${challengeId}:`, error);
+          }
         }
-      }
 
-      setChallenges(fetchedChallenges);
-      hasFetchedChallenges.current = true;
+        setChallenges(fetchedChallenges);
+        hasFetchedChallenges.current = true; // Mark challenges as fetched
+      } catch (error) {
+        console.error("Error fetching challenges:", error);
+      }
     };
 
     fetchChallenges();
@@ -102,12 +111,10 @@ const MainPage: React.FC = () => {
               {challenges.map((challenge, index) => (
                 <tr 
                   key={index}
+                  className="challenge-row"
                   style={{
                     borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
                     transition: "background 0.2s ease",
-                    ":hover": {
-                      background: "rgba(255, 255, 255, 0.05)"
-                    }
                   }}
                 >
                   <td style={{...tableCellStyle, width: '5%'}}>#{challenge.id.toString()}</td>
@@ -187,48 +194,71 @@ const ActionButton: React.FC<{ challenge: any }> = ({ challenge }) => {
 
     const userPublicKey = wallet.publicKey.toBase58();
 
-    const [challengePda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("challenge"), new BN(challenge.id).toArrayLike(Buffer, "le", 8)],
-      programContext?.program.programId
-    );
-    const [submissionPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("submission"), challengePda.toBuffer(), wallet.publicKey.toBuffer()],
-      programContext?.program.programId
-    );
-    const submission = await programContext?.program.account.submissionAccount.fetch(submissionPda);
-    const isSubmitter = submission.submitter.toBase58() === userPublicKey;
+    try {
+      // Derive the challenge PDA
+      const [challengePda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("challenge"), new BN(challenge.id).toArrayLike(Buffer, "le", 8)],
+        programContext?.program.programId
+      );
 
-    if (challenge.setter.toBase58() === userPublicKey) {
-      try {
-        await programContext?.program.methods
-          .setterClaim()
-          .accounts({
-            challengeAccount: challengePda,
-            setter: wallet.publicKey,
-          })
-          .rpc();
-        alert("Setter claim successful!");
-      } catch (error) {
-        console.error("Error in setter claim:", error);
-        alert("Failed to claim as setter.");
+      console.log("Derived Challenge PDA:", challengePda.toBase58());
+
+      // Check if the user is the setter
+      if (challenge.setter.toBase58() === userPublicKey) {
+        try {
+          // Call setter_claim function
+          await programContext?.program.methods
+            .setterClaim()
+            .accounts({
+              challengeAccount: challengePda,
+              setter: wallet.publicKey,
+            })
+            .rpc();
+          alert("Setter claim successful!");
+        } catch (error) {
+          console.error("Error in setter claim:", error);
+          alert("Failed to claim as setter.");
+        }
+        return;
       }
-    } else if (isSubmitter) {
+
+      // Derive the submission PDA
+      const [submissionPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("submission"), challengePda.toBuffer(), wallet.publicKey.toBuffer()],
+        programContext?.program.programId
+      );
+
+      // Check if the user is a submitter
+      let isSubmitter = false;
       try {
-        await programContext?.program.methods
-          .submitterClaim()
-          .accountsPartial({
-            challengeAccount: challengePda,
-            submissionAccount: submissionPda,
-            submitter: wallet.publicKey,
-          })
-          .rpc();
-        alert("Submitter claim successful!");
+        const submission = await programContext?.program.account.submissionAccount.fetch(submissionPda);
+        isSubmitter = submission.submitter.toBase58() === userPublicKey;
       } catch (error) {
-        console.error("Error in submitter claim:", error);
-        alert("Failed to claim as submitter.");
+        console.warn("No submission account found for this user:", error);
       }
-    } else {
-      alert("User not part of challenge");
+
+      if (isSubmitter) {
+        try {
+          // Call submitter_claim function
+          await programContext?.program.methods
+            .submitterClaim()
+            .accountsPartial ({
+              challengeAccount: challengePda,
+              submissionAccount: submissionPda,
+              submitter: wallet.publicKey,
+            })
+            .rpc();
+          alert("Submitter claim successful!");
+        } catch (error) {
+          console.error("Error in submitter claim:", error);
+          alert("Failed to claim as submitter.");
+        }
+      } else {
+        alert("User is neither the setter nor a submitter for this challenge.");
+      }
+    } catch (error) {
+      console.error("Error in handleClaim:", error);
+      alert("An error occurred while claiming the prize.");
     }
   };
 
@@ -247,7 +277,7 @@ const ActionButton: React.FC<{ challenge: any }> = ({ challenge }) => {
       try {
         await programContext?.program.methods
           .setterCloseChallenge()
-          .accounts({
+          .accountsPartial({
             challengeAccount: challengePda,
             setter: wallet.publicKey,
           })
