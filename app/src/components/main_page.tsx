@@ -17,84 +17,9 @@ const formatSol = (lamports: number) => {
 // Get timezone abbreviation
 const timezoneAbbr = new Date().toLocaleTimeString('en-US', { timeZoneName: 'short' }).split(' ')[2];
 
-// Status display component
-const StatusDisplay: React.FC<{ challenge: any }> = ({ challenge }) => {
-  const now = Math.floor(Date.now() / 1000);
-  const submissionDeadline = challenge.submissionDeadline.toNumber();
-  const answerRevealDeadline = challenge.answerRevealDeadline.toNumber();
-  const claimDeadline = challenge.claimDeadline.toNumber();
 
-  if (now < submissionDeadline) {
-    return <span style={{ color: '#4CAF50' }}>Open</span>;
-  } else if (now < answerRevealDeadline) {
-    return <span style={{ color: '#FFC107' }}>Closed</span>;
-  } else if (now < claimDeadline) {
-    return <span style={{ color: '#2196F3' }}>Revealing</span>;
-  } else {
-    return <span style={{ color: '#9E9E9E' }}>Ended</span>;
-  }
-};
 
-// Action button component
-const ActionButton: React.FC<{ challenge: any }> = ({ challenge }) => {
-  const navigate = useNavigate();
-  const now = Math.floor(Date.now() / 1000);
-  const submissionDeadline = challenge.submissionDeadline.toNumber();
-  const answerRevealDeadline = challenge.answerRevealDeadline.toNumber();
-  const claimDeadline = challenge.claimDeadline.toNumber();
 
-  if (now < submissionDeadline) {
-    return (
-      <button
-        onClick={() => navigate(`/create-submission/${challenge.id.toString()}`)}
-        style={{
-          background: '#4CAF50',
-          color: 'white',
-          border: 'none',
-          padding: '8px 16px',
-          borderRadius: '4px',
-          cursor: 'pointer',
-        }}
-      >
-        Submit
-      </button>
-    );
-  } else if (now < answerRevealDeadline) {
-    return (
-      <button
-        onClick={() => navigate(`/submission-reveal/${challenge.id.toString()}`)}
-        style={{
-          background: '#FFC107',
-          color: 'white',
-          border: 'none',
-          padding: '8px 16px',
-          borderRadius: '4px',
-          cursor: 'pointer',
-        }}
-      >
-        Reveal
-      </button>
-    );
-  } else {
-    return null;
-  }
-};
-
-// Table styles
-const tableHeaderStyle = {
-  padding: '16px',
-  textAlign: 'left' as const,
-  color: 'rgba(255, 255, 255, 0.7)',
-  fontWeight: '500',
-  fontSize: '14px',
-  borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
-};
-
-const tableCellStyle = {
-  padding: '16px',
-  color: 'rgba(255, 255, 255, 0.9)',
-  fontSize: '14px',
-};
 
 const MainPage: React.FC = () => {
   const programContext = useProgram();
@@ -180,6 +105,7 @@ const MainPage: React.FC = () => {
                   <th style={{...tableHeaderStyle, width: '10%'}}>Action</th>
                 </tr>
               </thead>
+            </table>
           </div>
           <div style={{
             flex: 1,
