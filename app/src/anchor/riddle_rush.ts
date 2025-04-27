@@ -5,7 +5,9 @@
  * IDL can be found at `target/idl/riddle_rush.json`.
  */
 export type RiddleRush = {
-  "address": "35ELX25de2z4XxDYW1wizysNjsjm2WUrfbPgvvJkDtbZ",
+  "version": "0.1.0",
+  "name": "riddle_rush",
+  "address": "Arbq6eViLrrx51rnhrdX8K6BAWuSujS6aubnW9edAYhp",
   "metadata": {
     "name": "riddleRush",
     "version": "0.1.0",

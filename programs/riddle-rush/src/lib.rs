@@ -9,7 +9,7 @@ pub use constants::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("35ELX25de2z4XxDYW1wizysNjsjm2WUrfbPgvvJkDtbZ");
+declare_id!("Arbq6eViLrrx51rnhrdX8K6BAWuSujS6aubnW9edAYhp");
 
 #[program]
 pub mod riddle_rush {
@@ -17,14 +17,13 @@ pub mod riddle_rush {
 
     pub fn create_challenge(
         ctx: Context<CreateChallenge>,
-        id: u64,
         question: String,
         submission_deadline: i64,
         answer_reveal_deadline: i64,
         claim_deadline: i64,
         entry_fee: u64,
     ) -> Result<()> {
-        create_challenge::handler(ctx, id, question, submission_deadline, answer_reveal_deadline, claim_deadline, entry_fee)
+        create_challenge::handler(ctx, question, submission_deadline, answer_reveal_deadline, claim_deadline, entry_fee)
     }
 
     pub fn create_submission(

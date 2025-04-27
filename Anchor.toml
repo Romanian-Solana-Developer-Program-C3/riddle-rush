@@ -6,10 +6,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-riddle_rush = "35ELX25de2z4XxDYW1wizysNjsjm2WUrfbPgvvJkDtbZ"
+riddle_rush = "Arbq6eViLrrx51rnhrdX8K6BAWuSujS6aubnW9edAYhp"
 
 [programs.devnet]
-riddle_rush = "35ELX25de2z4XxDYW1wizysNjsjm2WUrfbPgvvJkDtbZ"
+riddle_rush = "Arbq6eViLrrx51rnhrdX8K6BAWuSujS6aubnW9edAYhp"
 
 [registry]
 url = "https://api.apr.dev"
