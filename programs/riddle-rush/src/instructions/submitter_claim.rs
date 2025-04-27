@@ -52,6 +52,12 @@ pub fn handler(
     if num_players == 0 {
         // If no players have answered correctly, every player gets their entry fee back
         num_players = (ctx.accounts.challenge_account.pot / ctx.accounts.challenge_account.entry_fee) - 1;
+    } else {
+        //If someone has answered correctly, this answer must be correct to be eligible for a prize
+        require!(
+            ctx.accounts.submission_account.answer_correct,
+            RiddleRushError::AnswerMismatch
+        );
     }
 
     // Calculate the submitter's share

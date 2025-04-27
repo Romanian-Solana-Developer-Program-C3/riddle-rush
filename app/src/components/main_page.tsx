@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useProgram } from "../anchor/setup";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Connection, clusterApiUrl } from "@solana/web3.js";
 import BN from "bn.js";
 import { Buffer } from "buffer";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
+import { Program } from "@coral-xyz/anchor";
+import { RiddleRush } from "../anchor/riddle_rush";
 
-const GLOBAL_ID = 10;
+const GLOBAL_ID = 20; // Fixed global ID for now
 
 // Helper function to format SOL amounts
 const formatSol = (lamports: number) => {
@@ -103,25 +105,32 @@ const MainPage: React.FC = () => {
 
   useEffect(() => {
     const fetchChallenges = async () => {
-      if (!program || hasFetchedChallenges.current) return;
+      if (hasFetchedChallenges.current) return;
 
-      const fetchedChallenges = [];
-      for (let challengeId = 1; challengeId <= GLOBAL_ID; challengeId++) {
-        try {
-          const [challengePda] = PublicKey.findProgramAddressSync(
-            [Buffer.from("challenge"), new BN(challengeId).toArrayLike(Buffer, "le", 8)],
-            program.programId
-          );
+      try {
+        // Use a direct connection to Solana Devnet
+        const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
 
-          const challenge = await program.account.challengeAccount.fetch(challengePda);
-          fetchedChallenges.push({ ...challenge, pda: challengePda });
-        } catch (error) {
-          console.error(`Error fetching challenge ${challengeId}:`, error);
+        const fetchedChallenges = [];
+        for (let challengeId = 1; challengeId <= GLOBAL_ID; challengeId++) {
+          try {
+            const [challengePda] = PublicKey.findProgramAddressSync(
+              [Buffer.from("challenge"), new BN(challengeId).toArrayLike(Buffer, "le", 8)],
+              program.programId
+            );
+
+            const challenge = await program.account.challengeAccount.fetch(challengePda);
+            fetchedChallenges.push({ ...challenge, pda: challengePda });
+          } catch (error) {
+            console.error(`Error fetching challenge ${challengeId}:`, error);
+          }
         }
-      }
 
-      setChallenges(fetchedChallenges);
-      hasFetchedChallenges.current = true;
+        setChallenges(fetchedChallenges);
+        hasFetchedChallenges.current = true; // Mark challenges as fetched
+      } catch (error) {
+        console.error("Error fetching challenges:", error);
+      }
     };
 
     fetchChallenges();
@@ -171,7 +180,6 @@ const MainPage: React.FC = () => {
                   <th style={{...tableHeaderStyle, width: '10%'}}>Action</th>
                 </tr>
               </thead>
-            </table>
           </div>
           <div style={{
             flex: 1,
@@ -220,6 +228,210 @@ const MainPage: React.FC = () => {
       </div>
     </div>
   );
+};
+
+const tableHeaderStyle = {
+  padding: "16px",
+  fontWeight: "bold",
+  color: "rgba(255, 255, 255, 0.9)",
+  fontSize: "14px",
+  textTransform: "uppercase" as const,
+  letterSpacing: "0.5px",
+  whiteSpace: "normal" as const,
+  lineHeight: "1.2",
+  verticalAlign: "middle",
+  textAlign: "center" as const,
+};
+
+const tableCellStyle = {
+  padding: "16px",
+  color: "rgba(255, 255, 255, 0.8)",
+  fontSize: "14px",
+  verticalAlign: "middle",
+  textAlign: "center" as const,
+};
+
+// Status display component
+const StatusDisplay: React.FC<{ challenge: any }> = ({ challenge }) => {
+  const now = Math.floor(Date.now() / 1000);
+  const submissionDeadline = challenge.submissionDeadline.toNumber();
+  const answerRevealDeadline = challenge.answerRevealDeadline.toNumber();
+  const claimDeadline = challenge.claimDeadline.toNumber();
+
+  if (now < submissionDeadline) {
+    return <span style={{ color: '#4CAF50' }}>Accepting Answers</span>;
+  } else if (now < answerRevealDeadline) {
+    return <span style={{ color: '#FFC107' }}>Waiting for Reveal</span>;
+  } else if (now < claimDeadline) {
+    return <span style={{ color: '#2196F3' }}>Prize Collection</span>;
+  } else {
+    return <span style={{ color: '#9E9E9E' }}>Finished</span>;
+  }
+};
+
+// Action button component
+const ActionButton: React.FC<{ challenge: any }> = ({ challenge }) => {
+  const now = Math.floor(Date.now() / 1000);
+  const navigate = useNavigate();
+  const programContext = useProgram();
+  const wallet = programContext?.provider?.wallet;
+
+  const handleClaim = async () => {
+    if (!wallet) {
+      alert("Wallet not connected");
+      return;
+    }
+
+    const userPublicKey = wallet.publicKey.toBase58();
+
+    try {
+      // Derive the challenge PDA
+      const [challengePda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("challenge"), new BN(challenge.id).toArrayLike(Buffer, "le", 8)],
+        programContext?.program.programId
+      );
+
+      console.log("Derived Challenge PDA:", challengePda.toBase58());
+
+      // Check if the user is the setter
+      if (challenge.setter.toBase58() === userPublicKey) {
+        try {
+          // Call setter_claim function
+          await programContext?.program.methods
+            .setterClaim()
+            .accounts({
+              challengeAccount: challengePda,
+              setter: wallet.publicKey,
+            })
+            .rpc();
+          alert("Setter claim successful!");
+        } catch (error) {
+          console.error("Error in setter claim:", error);
+          alert("Failed to claim as setter.");
+        }
+        return;
+      }
+
+      // Derive the submission PDA
+      const [submissionPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("submission"), challengePda.toBuffer(), wallet.publicKey.toBuffer()],
+        programContext?.program.programId
+      );
+
+      // Check if the user is a submitter
+      let isSubmitter = false;
+      try {
+        const submission = await programContext?.program.account.submissionAccount.fetch(submissionPda);
+        isSubmitter = submission.submitter.toBase58() === userPublicKey;
+      } catch (error) {
+        console.warn("No submission account found for this user:", error);
+      }
+
+      if (isSubmitter) {
+        try {
+          // Call submitter_claim function
+          await programContext?.program.methods
+            .submitterClaim()
+            .accountsPartial ({
+              challengeAccount: challengePda,
+              submissionAccount: submissionPda,
+              submitter: wallet.publicKey,
+            })
+            .rpc();
+          alert("Submitter claim successful!");
+        } catch (error) {
+          console.error("Error in submitter claim:", error);
+          alert("Failed to claim as submitter.");
+        }
+      } else {
+        alert("User is neither the setter nor a submitter for this challenge.");
+      }
+    } catch (error) {
+      console.error("Error in handleClaim:", error);
+      alert("An error occurred while claiming the prize.");
+    }
+  };
+
+  const handleCloseChallenge = async () => {
+    if (!wallet) {
+      alert("Wallet not connected");
+      return;
+    }
+
+    const [challengePda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("challenge"), new BN(challenge.id).toArrayLike(Buffer, "le", 8)],
+      programContext?.program.programId
+    );
+
+    if (challenge.setter.toBase58() === wallet.publicKey.toBase58()) {
+      try {
+        await programContext?.program.methods
+          .setterCloseChallenge()
+          .accountsPartial({
+            challengeAccount: challengePda,
+            setter: wallet.publicKey,
+          })
+          .rpc();
+        alert("Challenge closed successfully!");
+      } catch (error) {
+        console.error("Error closing challenge:", error);
+        alert("Failed to close challenge.");
+      }
+    } else {
+      alert("Only the challenge setter can close the challenge");
+    }
+  };
+
+  if (now < challenge.submissionDeadline.toNumber()) {
+    return (
+      <button 
+        onClick={() => navigate(`/create-submission`, { state: { challenge } })}
+        style={buttonStyle}
+      >
+        Submit Answer
+      </button>
+    );
+  } else if (now < challenge.answerRevealDeadline.toNumber()) {
+    return (
+      <button 
+        onClick={() => navigate(`/submission-reveal`, { state: { challenge } })}
+        style={buttonStyle}
+      >
+        Reveal Answer
+      </button>
+    );
+  } else if (now < challenge.claimDeadline.toNumber()) {
+    return (
+      <button 
+        onClick={handleClaim}
+        style={buttonStyle}
+      >
+        Claim Prize
+      </button>
+    );
+  } else {
+    return (
+      <button 
+        onClick={handleCloseChallenge}
+        style={buttonStyle}
+      >
+        Close Challenge
+      </button>
+    );
+  }
+};
+
+const buttonStyle = {
+  padding: "8px 16px",
+  borderRadius: "6px",
+  border: "none",
+  background: "rgba(255, 255, 255, 0.1)",
+  color: "white",
+  cursor: "pointer",
+  transition: "all 0.2s ease",
+  ":hover": {
+    background: "rgba(255, 255, 255, 0.2)",
+  },
 };
 
 export default MainPage;
