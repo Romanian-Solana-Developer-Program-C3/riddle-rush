@@ -1,7 +1,5 @@
 {
-  "version": "0.1.0",
-  "name": "riddle_rush",
-  "address": "Arbq6eViLrrx51rnhrdX8K6BAWuSujS6aubnW9edAYhp",
+  "address": "3bKvaAkVaejaBLzpo6qzRMLUXbKpUUTm6G7LagPFNWEJ",
   "metadata": {
     "name": "riddle_rush",
     "version": "0.1.0",
@@ -84,6 +82,32 @@
           "signer": true
         },
         {
+          "name": "global_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  108,
+                  111,
+                  98,
+                  97,
+                  108,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "challenge_account",
           "writable": true,
           "pda": {
@@ -103,8 +127,9 @@
                 ]
               },
               {
-                "kind": "arg",
-                "path": "id"
+                "kind": "account",
+                "path": "global_config.next_challenge_id",
+                "account": "GlobalConfig"
               }
             ]
           }
@@ -115,10 +140,6 @@
         }
       ],
       "args": [
-        {
-          "name": "id",
-          "type": "u64"
-        },
         {
           "name": "question",
           "type": "string"
@@ -233,6 +254,57 @@
           }
         }
       ]
+    },
+    {
+      "name": "initialize",
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "global_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  108,
+                  111,
+                  98,
+                  97,
+                  108,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
     },
     {
       "name": "setter_claim",
@@ -532,6 +604,19 @@
       ]
     },
     {
+      "name": "GlobalConfig",
+      "discriminator": [
+        149,
+        8,
+        156,
+        202,
+        160,
+        252,
+        176,
+        217
+      ]
+    },
+    {
       "name": "SubmissionAccount",
       "discriminator": [
         254,
@@ -680,6 +765,22 @@
           {
             "name": "correct_submissions",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GlobalConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "next_challenge_id",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
           }
         ]
       }

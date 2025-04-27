@@ -1,6 +1,6 @@
 import { Program, AnchorProvider } from '@coral-xyz/anchor';
 import { Connection, Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
-import { RiddleRush } from './anchor/riddle_rush';
+import IDL from './anchor/idl.json';
 import BN from 'bn.js';
 
 async function main() {
@@ -13,14 +13,21 @@ async function main() {
     );
     
     // Create provider
-    const provider = new AnchorProvider(connection, { publicKey: wallet.publicKey, signTransaction: async (tx) => {
-        tx.sign(wallet);
-        return tx;
-    }}, { commitment: 'confirmed' });
+    const provider = new AnchorProvider(
+        connection,
+        {
+            publicKey: wallet.publicKey,
+            signTransaction: async (tx) => {
+                tx.sign(wallet);
+                return tx;
+            }
+        },
+        { commitment: 'confirmed' }
+    );
     
     // Create program instance
-    const programId = new PublicKey('Arbq6eViLrrx51rnhrdX8K6BAWuSujS6aubnW9edAYhp');
-    const program = new Program(RiddleRush as any, programId, provider);
+    const programId = new PublicKey('3bKvaAkVaejaBLzpo6qzRMLUXbKpUUTm6G7LagPFNWEJ');
+    const program = new Program(IDL as any, programId, provider);
     
     // Calculate deadlines
     const now = Math.floor(Date.now() / 1000);

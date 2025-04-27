@@ -9,11 +9,15 @@ pub use constants::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("Arbq6eViLrrx51rnhrdX8K6BAWuSujS6aubnW9edAYhp");
+declare_id!("3bKvaAkVaejaBLzpo6qzRMLUXbKpUUTm6G7LagPFNWEJ");
 
 #[program]
 pub mod riddle_rush {
     use super::*;
+
+    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+        initialize::handler(ctx)
+    }
 
     pub fn create_challenge(
         ctx: Context<CreateChallenge>,

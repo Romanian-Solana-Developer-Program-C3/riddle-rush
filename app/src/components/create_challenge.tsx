@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProgram } from '../anchor/setup';
-import { PublicKey } from '@solana/web3.js';
+import { PublicKey, SystemProgram } from '@solana/web3.js';
 import BN from 'bn.js';
 import { Buffer } from 'buffer';
 
@@ -44,8 +44,8 @@ const CreateChallenge: React.FC = () => {
       const revealTimestamp = Math.floor(new Date(answerRevealDeadline).getTime() / 1000);
       const claimTimestamp = Math.floor(new Date(claimDeadline).getTime() / 1000);
 
-      // Convert entry fee to lamports
-      const entryFeeLamports = Math.floor(parseFloat(entryFee));
+      // Convert entry fee to lamports (1 SOL = 1_000_000_000 lamports)
+      const entryFeeLamports = Math.floor(parseFloat(entryFee) * 1_000_000_000);
 
       // Get the global config PDA
       const [globalConfigPda] = PublicKey.findProgramAddressSync(
@@ -53,9 +53,16 @@ const CreateChallenge: React.FC = () => {
         program.programId
       );
 
-      // Create PDA for the challenge
+      // Get the global config account to get the next_challenge_id
+      const globalConfig = await program.account.GlobalConfig.fetch(globalConfigPda);
+      const nextChallengeId = globalConfig.next_challenge_id;
+
+      // Create PDA for the challenge using the next_challenge_id
       const [challengePda] = PublicKey.findProgramAddressSync(
-        [Buffer.from('challenge'), new BN(0).toArrayLike(Buffer, 'le', 8)], // The ID will be set by the program
+        [
+          Buffer.from('challenge'),
+          new BN(nextChallengeId).toArrayLike(Buffer, 'le', 8)
+        ],
         program.programId
       );
 
@@ -64,15 +71,16 @@ const CreateChallenge: React.FC = () => {
         entryFeeLamports,
         submissionTimestamp,
         revealTimestamp,
-        claimTimestamp
+        claimTimestamp,
+        nextChallengeId: nextChallengeId.toString()
       });
 
       console.log('Global Config PDA:', globalConfigPda.toBase58());
       console.log('Challenge PDA:', challengePda.toBase58());
 
       // Create the challenge
-      await program.methods
-        .createChallenge(
+      const tx = await program.methods
+        .create_challenge(
           question,
           new BN(submissionTimestamp),
           new BN(revealTimestamp),
@@ -80,12 +88,14 @@ const CreateChallenge: React.FC = () => {
           new BN(entryFeeLamports)
         )
         .accounts({
-          globalConfig: globalConfigPda,
-          challengeAccount: challengePda,
           setter: wallet.publicKey,
+          global_config: globalConfigPda,
+          challenge_account: challengePda,
+          system_program: SystemProgram.programId,
         })
         .rpc();
 
+      console.log('Transaction signature:', tx);
       alert('Challenge created successfully!');
       navigate('/');
     } catch (error) {
@@ -95,8 +105,17 @@ const CreateChallenge: React.FC = () => {
           message: error.message,
           stack: error.stack
         });
+        // Show more specific error message
+        if (error.message.includes('insufficient funds')) {
+          alert('Insufficient funds to create challenge. Please ensure you have enough SOL.');
+        } else if (error.message.includes('deadline')) {
+          alert('Invalid deadline configuration. Please check your dates.');
+        } else {
+          alert(`Failed to create challenge: ${error.message}`);
+        }
+      } else {
+        alert('Failed to create challenge. Please try again.');
       }
-      alert('Failed to create challenge. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

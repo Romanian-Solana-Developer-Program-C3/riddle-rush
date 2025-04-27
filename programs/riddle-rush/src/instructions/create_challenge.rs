@@ -8,10 +8,7 @@ use crate::error::RiddleRushError;
 pub struct CreateChallenge<'info> {
     #[account(mut)]
     pub setter: Signer<'info>,
-    #[account(
-        init_if_needed,
-        payer = setter,
-        space = ANCHOR_DISCRIMINATOR + GlobalConfig::INIT_SPACE,
+    #[account(mut,
         seeds = [b"global_config"],
         bump,
     )]
