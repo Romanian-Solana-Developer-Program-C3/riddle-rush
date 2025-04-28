@@ -9,28 +9,75 @@ import {
   WalletMultiButton,
 } from "@solana/wallet-adapter-react-ui";
 import { clusterApiUrl } from "@solana/web3.js";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom"; // Import routing components
+import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import "./App.css";
-import Logo from "./components/Logo";
 
 // Default styles that can be overridden by your app
 import "@solana/wallet-adapter-react-ui/styles.css";
 
 import MainPage from "./components/main_page";
-import CreateSubmission from "./components/create_submission"; // Import CreateSubmission component
-import SubmissionReveal from "./components/submission_reveal"; // Import SubmissionReveal component
+import CreateSubmission from "./components/create_submission";
+import SubmissionReveal from "./components/submission_reveal";
+import CreateChallenge from "./components/create_challenge";
+import Logo from "./components/Logo";
+
+const NavigationMenu = () => {
+  const navigate = useNavigate();
+  
+  const menuItemStyle = {
+    fontFamily: "'Inter', sans-serif",
+    fontSize: "14px",
+    fontWeight: "500",
+    letterSpacing: "0.3px",
+    color: "rgba(255, 255, 255, 0.7)",
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+    padding: "8px 16px",
+    borderRadius: "6px",
+    background: "rgba(255, 255, 255, 0.05)",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
+    ":hover": {
+      background: "rgba(255, 255, 255, 0.1)",
+      color: "rgba(255, 255, 255, 0.9)",
+      border: "1px solid rgba(255, 255, 255, 0.2)",
+    },
+  };
+  
+  return (
+    <div style={{
+      display: "flex",
+      gap: "16px",
+      alignItems: "center",
+      marginRight: "24px",
+    }}>
+      <div 
+        onClick={() => navigate('/')}
+        style={menuItemStyle}
+      >
+        Challenge List
+      </div>
+      <div 
+        onClick={() => navigate('/create-challenge')}
+        style={menuItemStyle}
+      >
+        Create New Challenge
+      </div>
+      <div 
+        onClick={() => navigate('/stats')}
+        style={menuItemStyle}
+      >
+        Stats
+      </div>
+    </div>
+  );
+};
 
 function App() {
-  // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'.
   const network = WalletAdapterNetwork.Devnet;
-  // You can also provide a custom RPC endpoint.
   const endpoint = useMemo(() => clusterApiUrl(network), [network]);
 
   const wallets = useMemo(
-    () => [
-      // if desired, manually define specific/custom wallets here (normally not required)
-      // otherwise, the wallet-adapter will auto detect the wallets a user's browser has available
-    ],
+    () => [],
     [network],
   );
 
@@ -68,16 +115,9 @@ function App() {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                   <Logo />
-                  <h1 style={{ 
-                    margin: 0,
-                    fontSize: '24px',
-                    color: 'white',
-                    fontWeight: 'bold',
-                  }}>
-                    Challenges
-                  </h1>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <NavigationMenu />
                   <WalletMultiButton />
                 </div>
               </div>
@@ -90,6 +130,7 @@ function App() {
                   <Route path="/" element={<MainPage />} />
                   <Route path="/create-submission" element={<CreateSubmission />} />
                   <Route path="/submission-reveal" element={<SubmissionReveal />} />
+                  <Route path="/create-challenge" element={<CreateChallenge />} />
                 </Routes>
               </div>
             </div>

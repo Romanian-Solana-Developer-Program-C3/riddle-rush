@@ -6,6 +6,7 @@ pub mod submitter_claim;
 pub mod setter_close_challenge;
 pub mod challenge_solution_reveal;
 pub mod submission_solution_reveal;
+pub mod initialize;
 
 pub use create_challenge::*;
 pub use expression::*;
@@ -15,3 +16,4 @@ pub use submitter_claim::*;
 pub use setter_close_challenge::*;
 pub use challenge_solution_reveal::*;
 pub use submission_solution_reveal::*;
+pub use initialize::*;

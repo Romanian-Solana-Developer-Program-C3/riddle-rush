@@ -1,18 +1,23 @@
 use anchor_lang::prelude::*;
 
-use crate::{ChallengeAccount, ANCHOR_DISCRIMINATOR, expression::evaluate_expression};
+use crate::{ChallengeAccount, GlobalConfig, ANCHOR_DISCRIMINATOR, expression::evaluate_expression};
 use crate::error::RiddleRushError;
 
 #[derive(Accounts)]
-#[instruction(id: u64, submission_deadline: i64, answer_reveal_deadline: i64, claim_deadline: i64, entry_fee: u64)]
+#[instruction(submission_deadline: i64, answer_reveal_deadline: i64, claim_deadline: i64, entry_fee: u64)]
 pub struct CreateChallenge<'info> {
     #[account(mut)]
     pub setter: Signer<'info>,
+    #[account(mut,
+        seeds = [b"global_config"],
+        bump,
+    )]
+    pub global_config: Account<'info, GlobalConfig>,
     #[account(
         init,
         payer = setter,
         space = ANCHOR_DISCRIMINATOR + ChallengeAccount::INIT_SPACE,
-        seeds = [b"challenge", id.to_le_bytes().as_ref()],
+        seeds = [b"challenge", global_config.next_challenge_id.to_le_bytes().as_ref()],
         bump,
         constraint = entry_fee > 0,
     )]
@@ -22,15 +27,14 @@ pub struct CreateChallenge<'info> {
 
 pub fn handler(
     ctx: Context<CreateChallenge>,
-    _id: u64,
-    _question: String,
-    _submission_deadline: i64,
-    _answer_reveal_deadline: i64,   
-    _claim_deadline: i64,
-    _entry_fee: u64, 
+    question: String,
+    submission_deadline: i64,
+    answer_reveal_deadline: i64,   
+    claim_deadline: i64,
+    entry_fee: u64, 
 ) -> Result<()> {
     // Check if the solution is a valid mathematical expression
-    match evaluate_expression(&_question) {
+    match evaluate_expression(&question) {
         Ok(result) => {
             msg!("Expression result: {}", result);
         },
@@ -41,17 +45,17 @@ pub fn handler(
     }
 
     require!(
-        _submission_deadline < _answer_reveal_deadline,
+        submission_deadline < answer_reveal_deadline,
         RiddleRushError::AnswerRevealDeadlinBeforeSubmissionDeadline
     );
 
     require!(
-        _answer_reveal_deadline < _claim_deadline,
+        answer_reveal_deadline < claim_deadline,
         RiddleRushError::AnswerRevealDeadlinBeforeClaimDeadline
     );
 
     require!(
-        _submission_deadline > Clock::get()?.unix_timestamp,
+        submission_deadline > Clock::get()?.unix_timestamp,
         RiddleRushError::SubmissionDeadlinePassed
     );
 
@@ -63,23 +67,27 @@ pub fn handler(
             to: ctx.accounts.challenge_account.to_account_info(),
         },
     );
-    anchor_lang::system_program::transfer(cpi_context, _entry_fee)?;
+    anchor_lang::system_program::transfer(cpi_context, entry_fee)?;
     
     ctx.accounts.challenge_account.set_inner( 
         ChallengeAccount {
-            id: _id,
-            question: _question,
+            id: ctx.accounts.global_config.next_challenge_id,
+            question,
             solution: "".to_string(),
-            submission_deadline: _submission_deadline,
-            answer_reveal_deadline: _answer_reveal_deadline,
-            claim_deadline: _claim_deadline,
-            entry_fee: _entry_fee,
+            submission_deadline,
+            answer_reveal_deadline,
+            claim_deadline,
+            entry_fee,
             setter: ctx.accounts.setter.key(),
-            pot: _entry_fee, // Initialize pot with entry fee
+            pot: entry_fee, // Initialize pot with entry fee
             setter_cut_claimed: false,
             bump: ctx.bumps.challenge_account,
             correct_submissions: 0,
         },
     );
+
+    // Increment the next challenge ID
+    ctx.accounts.global_config.next_challenge_id += 1;
+
     Ok(())
 }

@@ -5,16 +5,18 @@
  * IDL can be found at `target/idl/riddle_rush.json`.
  */
 export type RiddleRush = {
-  "address": "35ELX25de2z4XxDYW1wizysNjsjm2WUrfbPgvvJkDtbZ",
+  "version": "0.1.0",
+  "name": "riddle_rush",
+  "address": "3bKvaAkVaejaBLzpo6qzRMLUXbKpUUTm6G7LagPFNWEJ",
   "metadata": {
-    "name": "riddleRush",
+    "name": "riddle_rush",
     "version": "0.1.0",
     "spec": "0.1.0",
     "description": "Created with Anchor"
   },
   "instructions": [
     {
-      "name": "challengeSolutionReveal",
+      "name": "challenge_solution_reveal",
       "discriminator": [
         83,
         107,
@@ -32,7 +34,7 @@ export type RiddleRush = {
           "signer": true
         },
         {
-          "name": "challengeAccount",
+          "name": "challenge_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -58,7 +60,7 @@ export type RiddleRush = {
           }
         },
         {
-          "name": "systemProgram",
+          "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -70,7 +72,7 @@ export type RiddleRush = {
       ]
     },
     {
-      "name": "createChallenge",
+      "name": "create_challenge",
       "discriminator": [
         170,
         244,
@@ -88,7 +90,33 @@ export type RiddleRush = {
           "signer": true
         },
         {
-          "name": "challengeAccount",
+          "name": "global_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  108,
+                  111,
+                  98,
+                  97,
+                  108,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "challenge_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -107,46 +135,43 @@ export type RiddleRush = {
                 ]
               },
               {
-                "kind": "arg",
-                "path": "id"
+                "kind": "account",
+                "path": "global_config.next_challenge_id",
+                "account": "GlobalConfig"
               }
             ]
           }
         },
         {
-          "name": "systemProgram",
+          "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
         {
-          "name": "id",
-          "type": "u64"
-        },
-        {
           "name": "question",
           "type": "string"
         },
         {
-          "name": "submissionDeadline",
+          "name": "submission_deadline",
           "type": "i64"
         },
         {
-          "name": "answerRevealDeadline",
+          "name": "answer_reveal_deadline",
           "type": "i64"
         },
         {
-          "name": "claimDeadline",
+          "name": "claim_deadline",
           "type": "i64"
         },
         {
-          "name": "entryFee",
+          "name": "entry_fee",
           "type": "u64"
         }
       ]
     },
     {
-      "name": "createSubmission",
+      "name": "create_submission",
       "discriminator": [
         85,
         217,
@@ -164,7 +189,7 @@ export type RiddleRush = {
           "signer": true
         },
         {
-          "name": "challengeAccount",
+          "name": "challenge_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -185,13 +210,13 @@ export type RiddleRush = {
               {
                 "kind": "account",
                 "path": "challenge_account.id",
-                "account": "challengeAccount"
+                "account": "ChallengeAccount"
               }
             ]
           }
         },
         {
-          "name": "submissionAccount",
+          "name": "submission_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -212,7 +237,7 @@ export type RiddleRush = {
               },
               {
                 "kind": "account",
-                "path": "challengeAccount"
+                "path": "challenge_account"
               },
               {
                 "kind": "account",
@@ -222,13 +247,13 @@ export type RiddleRush = {
           }
         },
         {
-          "name": "systemProgram",
+          "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
         {
-          "name": "encryptedAnswer",
+          "name": "encrypted_answer",
           "type": {
             "array": [
               "u8",
@@ -239,7 +264,58 @@ export type RiddleRush = {
       ]
     },
     {
-      "name": "setterClaim",
+      "name": "initialize",
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "global_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  108,
+                  111,
+                  98,
+                  97,
+                  108,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "setter_claim",
       "discriminator": [
         52,
         58,
@@ -256,11 +332,11 @@ export type RiddleRush = {
           "writable": true,
           "signer": true,
           "relations": [
-            "challengeAccount"
+            "challenge_account"
           ]
         },
         {
-          "name": "challengeAccount",
+          "name": "challenge_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -281,20 +357,20 @@ export type RiddleRush = {
               {
                 "kind": "account",
                 "path": "challenge_account.id",
-                "account": "challengeAccount"
+                "account": "ChallengeAccount"
               }
             ]
           }
         },
         {
-          "name": "systemProgram",
+          "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
       ],
       "args": []
     },
     {
-      "name": "setterCloseChallenge",
+      "name": "setter_close_challenge",
       "discriminator": [
         102,
         182,
@@ -312,7 +388,7 @@ export type RiddleRush = {
           "signer": true
         },
         {
-          "name": "challengeAccount",
+          "name": "challenge_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -333,20 +409,20 @@ export type RiddleRush = {
               {
                 "kind": "account",
                 "path": "challenge_account.id",
-                "account": "challengeAccount"
+                "account": "ChallengeAccount"
               }
             ]
           }
         },
         {
-          "name": "systemProgram",
+          "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
       ],
       "args": []
     },
     {
-      "name": "submissionSolutionReveal",
+      "name": "submission_solution_reveal",
       "discriminator": [
         63,
         172,
@@ -364,7 +440,7 @@ export type RiddleRush = {
           "signer": true
         },
         {
-          "name": "challengeAccount",
+          "name": "challenge_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -385,13 +461,13 @@ export type RiddleRush = {
               {
                 "kind": "account",
                 "path": "challenge_account.id",
-                "account": "challengeAccount"
+                "account": "ChallengeAccount"
               }
             ]
           }
         },
         {
-          "name": "submissionAccount",
+          "name": "submission_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -412,7 +488,7 @@ export type RiddleRush = {
               },
               {
                 "kind": "account",
-                "path": "challengeAccount"
+                "path": "challenge_account"
               },
               {
                 "kind": "account",
@@ -422,7 +498,7 @@ export type RiddleRush = {
           }
         },
         {
-          "name": "systemProgram",
+          "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -432,13 +508,13 @@ export type RiddleRush = {
           "type": "string"
         },
         {
-          "name": "plaintextAnswer",
+          "name": "plaintext_answer",
           "type": "string"
         }
       ]
     },
     {
-      "name": "submitterClaim",
+      "name": "submitter_claim",
       "discriminator": [
         153,
         174,
@@ -456,7 +532,7 @@ export type RiddleRush = {
           "signer": true
         },
         {
-          "name": "challengeAccount",
+          "name": "challenge_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -477,13 +553,13 @@ export type RiddleRush = {
               {
                 "kind": "account",
                 "path": "challenge_account.id",
-                "account": "challengeAccount"
+                "account": "ChallengeAccount"
               }
             ]
           }
         },
         {
-          "name": "submissionAccount",
+          "name": "submission_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -504,7 +580,7 @@ export type RiddleRush = {
               },
               {
                 "kind": "account",
-                "path": "challengeAccount"
+                "path": "challenge_account"
               },
               {
                 "kind": "account",
@@ -514,7 +590,7 @@ export type RiddleRush = {
           }
         },
         {
-          "name": "systemProgram",
+          "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -523,7 +599,7 @@ export type RiddleRush = {
   ],
   "accounts": [
     {
-      "name": "challengeAccount",
+      "name": "ChallengeAccount",
       "discriminator": [
         96,
         128,
@@ -536,7 +612,20 @@ export type RiddleRush = {
       ]
     },
     {
-      "name": "submissionAccount",
+      "name": "GlobalConfig",
+      "discriminator": [
+        149,
+        8,
+        156,
+        202,
+        160,
+        252,
+        176,
+        217
+      ]
+    },
+    {
+      "name": "SubmissionAccount",
       "discriminator": [
         254,
         14,
@@ -552,88 +641,88 @@ export type RiddleRush = {
   "errors": [
     {
       "code": 6000,
-      "name": "submissionDeadlinePassed",
+      "name": "SubmissionDeadlinePassed",
       "msg": "The submission deadline has already passed."
     },
     {
       "code": 6001,
-      "name": "answerRevealDeadlinBeforeSubmissionDeadline",
+      "name": "AnswerRevealDeadlinBeforeSubmissionDeadline",
       "msg": "The answer reveal deadline must be after the submission deadline."
     },
     {
       "code": 6002,
-      "name": "answerRevealDeadlinBeforeClaimDeadline",
+      "name": "AnswerRevealDeadlinBeforeClaimDeadline",
       "msg": "The answer reveal deadline must be before the claim deadline."
     },
     {
       "code": 6003,
-      "name": "questionTooLong",
+      "name": "QuestionTooLong",
       "msg": "The question is too long, max length: {MAX_QUESTION_LENGTH}"
     },
     {
       "code": 6004,
-      "name": "solutionTooLong",
+      "name": "SolutionTooLong",
       "msg": "The solution is too long, max length: {MAX_QUESTION_LENGTH}"
     },
     {
       "code": 6005,
-      "name": "zeroEntryFee",
+      "name": "ZeroEntryFee",
       "msg": "The entry fee must be greater than zero."
     },
     {
       "code": 6006,
-      "name": "invalidExpression",
+      "name": "InvalidExpression",
       "msg": "Invalid mathematical expression."
     },
     {
       "code": 6007,
-      "name": "withdrawTooEarly",
+      "name": "WithdrawTooEarly",
       "msg": "User attempting to withdraw before answer reveal deadline."
     },
     {
       "code": 6008,
-      "name": "withdrawTooLate",
+      "name": "WithdrawTooLate",
       "msg": "User attempting to withdraw after prize claim deadline."
     },
     {
       "code": 6009,
-      "name": "insufficientFunds",
+      "name": "InsufficientFunds",
       "msg": "Insufficient funds in the challenge account."
     },
     {
       "code": 6010,
-      "name": "solutionRevealDeadlineNotMet",
+      "name": "SolutionRevealDeadlineNotMet",
       "msg": "Solution reveal deadline has not been met."
     },
     {
       "code": 6011,
-      "name": "submissionAlreadyRevealed",
+      "name": "SubmissionAlreadyRevealed",
       "msg": "This submission has already been revealed."
     },
     {
       "code": 6012,
-      "name": "notTheSubmitter",
+      "name": "NotTheSubmitter",
       "msg": "The transaction sender is not the submitter."
     },
     {
       "code": 6013,
-      "name": "solutionNotRevealed",
+      "name": "SolutionNotRevealed",
       "msg": "The solution has not been revealed yet."
     },
     {
       "code": 6014,
-      "name": "answerMismatch",
+      "name": "AnswerMismatch",
       "msg": "The answer doesn't match the encrypted answer."
     },
     {
       "code": 6015,
-      "name": "zeroCorrectSubmissions",
+      "name": "ZeroCorrectSubmissions",
       "msg": "No correct submissions."
     }
   ],
   "types": [
     {
-      "name": "challengeAccount",
+      "name": "ChallengeAccount",
       "type": {
         "kind": "struct",
         "fields": [
@@ -650,19 +739,19 @@ export type RiddleRush = {
             "type": "string"
           },
           {
-            "name": "submissionDeadline",
+            "name": "submission_deadline",
             "type": "i64"
           },
           {
-            "name": "answerRevealDeadline",
+            "name": "answer_reveal_deadline",
             "type": "i64"
           },
           {
-            "name": "claimDeadline",
+            "name": "claim_deadline",
             "type": "i64"
           },
           {
-            "name": "entryFee",
+            "name": "entry_fee",
             "type": "u64"
           },
           {
@@ -674,7 +763,7 @@ export type RiddleRush = {
             "type": "u64"
           },
           {
-            "name": "setterCutClaimed",
+            "name": "setter_cut_claimed",
             "type": "bool"
           },
           {
@@ -682,19 +771,35 @@ export type RiddleRush = {
             "type": "u8"
           },
           {
-            "name": "correctSubmissions",
+            "name": "correct_submissions",
             "type": "u64"
           }
         ]
       }
     },
     {
-      "name": "submissionAccount",
+      "name": "GlobalConfig",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "challengeId",
+            "name": "next_challenge_id",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SubmissionAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "challenge_id",
             "type": "u64"
           },
           {
@@ -702,7 +807,7 @@ export type RiddleRush = {
             "type": "pubkey"
           },
           {
-            "name": "encryptedAnswer",
+            "name": "encrypted_answer",
             "type": {
               "array": [
                 "u8",
@@ -715,7 +820,7 @@ export type RiddleRush = {
             "type": "bool"
           },
           {
-            "name": "answerCorrect",
+            "name": "answer_correct",
             "type": "bool"
           },
           {
@@ -728,7 +833,7 @@ export type RiddleRush = {
   ],
   "constants": [
     {
-      "name": "seed",
+      "name": "SEED",
       "type": "string",
       "value": "\"anchor\""
     }

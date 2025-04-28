@@ -6,10 +6,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-riddle_rush = "35ELX25de2z4XxDYW1wizysNjsjm2WUrfbPgvvJkDtbZ"
+riddle_rush = "3bKvaAkVaejaBLzpo6qzRMLUXbKpUUTm6G7LagPFNWEJ"
 
 [programs.devnet]
-riddle_rush = "35ELX25de2z4XxDYW1wizysNjsjm2WUrfbPgvvJkDtbZ"
+riddle_rush = "3bKvaAkVaejaBLzpo6qzRMLUXbKpUUTm6G7LagPFNWEJ"
 
 [registry]
 url = "https://api.apr.dev"
@@ -20,3 +20,4 @@ wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+initialize = "yarn run ts-node scripts/initialize.ts"

@@ -18,7 +18,7 @@ pub struct ChallengeSolutionReveal<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<ChallengeSolutionReveal>, id: u64) -> Result<()> {
+pub fn handler(ctx: Context<ChallengeSolutionReveal>, _id: u64) -> Result<()> {
     let challenge = &mut ctx.accounts.challenge_account;
     require!(Clock::get()?.unix_timestamp > challenge.submission_deadline, RiddleRushError::SolutionRevealDeadlineNotMet);
 

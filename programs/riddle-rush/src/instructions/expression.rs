@@ -11,7 +11,7 @@ pub enum ExpressionError {
 impl From<ExpressionError> for anchor_lang::error::Error {
     fn from(e: ExpressionError) -> Self {
         match e {
-            ExpressionError::InvalidCharacter(c) => anchor_lang::error::Error::from(ProgramError::Custom(100)),
+            ExpressionError::InvalidCharacter(_c) => anchor_lang::error::Error::from(ProgramError::Custom(100)),
             ExpressionError::InvalidNumber => anchor_lang::error::Error::from(ProgramError::Custom(101)),
             ExpressionError::UnexpectedEnd => anchor_lang::error::Error::from(ProgramError::Custom(102)),
             ExpressionError::DivisionByZero => anchor_lang::error::Error::from(ProgramError::Custom(103)),
