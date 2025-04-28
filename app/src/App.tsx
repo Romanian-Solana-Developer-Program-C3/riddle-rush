@@ -128,7 +128,7 @@ function App() {
               }}>
                 <Routes>
                   <Route path="/" element={<MainPage />} />
-                  <Route path="/create-submission" element={<CreateSubmission />} />
+                  <Route path="/create-submission/:id" element={<CreateSubmission />} />
                   <Route path="/submission-reveal" element={<SubmissionReveal />} />
                   <Route path="/create-challenge" element={<CreateChallenge />} />
                 </Routes>

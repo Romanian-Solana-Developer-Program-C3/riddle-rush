@@ -1,14 +1,217 @@
-import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useProgram } from '../anchor/setup';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { Buffer } from 'buffer';
+import BN from 'bn.js';
+import { PublicKey, SystemProgram } from '@solana/web3.js';
+
+// Polyfill Buffer for browser
+if (typeof window !== 'undefined') {
+  window.Buffer = Buffer;
+}
 
 const CreateSubmission: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const challenge = location.state?.challenge;
+  const { id } = useParams<{ id: string }>();
+  const initialChallenge = location.state?.challenge;
+  const programContext = useProgram();
+  const program = programContext?.program;
+  const wallet = useWallet();
+
+  const [challenge, setChallenge] = useState<any>(null);
+  const [answer, setAnswer] = useState('');
+  const [nonce, setNonce] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<string>('');
+
+  // Fetch challenge data
+  useEffect(() => {
+    const fetchChallenge = async () => {
+      if (!program || !id) {
+        console.log('Program or challenge ID not available:', { program, id });
+        return;
+      }
+
+      try {
+        console.log('Fetching challenge data...');
+        console.log('Challenge ID:', id);
+        console.log('Initial challenge:', initialChallenge);
+        console.log('Submission deadline:', initialChallenge.submissionDeadline);
+        console.log('Answer reveal deadline:', initialChallenge.answerRevealDeadline);
+        console.log('Claim deadline:', initialChallenge.claimDeadline);
+        console.log('Entry fee:', initialChallenge.entryFee);
+        console.log('Pot:', initialChallenge.pot);
+        console.log('Program account:', program.account);
+        console.log('Available accounts:', Object.keys(program.account));
+
+        // Create a new challenge object with the BN values properly converted
+        const challengeData = {
+          id: initialChallenge.id,
+          question: initialChallenge.question,
+          solution: initialChallenge.solution,
+          submissionDeadline: new BN(initialChallenge.submissionDeadline.words[0]).add(new BN(initialChallenge.submissionDeadline.words[1]).mul(new BN(0x10000000))),
+          answerRevealDeadline: new BN(initialChallenge.answerRevealDeadline.words[0]).add(new BN(initialChallenge.answerRevealDeadline.words[1]).mul(new BN(0x10000000))),
+          claimDeadline: new BN(initialChallenge.claimDeadline.words[0]).add(new BN(initialChallenge.claimDeadline.words[1]).mul(new BN(0x10000000))),
+          entryFee: new BN(initialChallenge.entryFee.words[0]),
+          pot: new BN(initialChallenge.pot.words[0]),
+          setter: initialChallenge.setter,
+          publicKey: initialChallenge.pda,
+        };
+
+        console.log('Debug - Initial Challenge Data:');
+        console.log('Raw submission deadline:', initialChallenge.submissionDeadline);
+        console.log('Raw submission deadline words:', initialChallenge.submissionDeadline.words);
+        console.log('Converted submission deadline:', challengeData.submissionDeadline.toString());
+        console.log('Submission deadline as date:', new Date(challengeData.submissionDeadline.toNumber() * 1000).toISOString());
+        console.log('Current time:', new Date().toISOString());
+
+        const now = Math.floor(Date.now() / 1000);
+        console.log('Current time:', now);
+        console.log('Current time (date):', new Date(now * 1000).toLocaleString());
+        console.log('Submission deadline:', challengeData.submissionDeadline.toNumber());
+        console.log('Submission deadline (date):', new Date(challengeData.submissionDeadline.toNumber() * 1000).toLocaleString());
+        console.log('Time remaining:', challengeData.submissionDeadline.toNumber() - now, 'seconds');
+
+        setChallenge(challengeData);
+      } catch (err) {
+        console.error('Error setting challenge:', err);
+        setError('Failed to set challenge data. Please try again.');
+      }
+    };
+
+    fetchChallenge();
+  }, [program, id, initialChallenge]);
+
+  // Generate random nonce on component mount
+  useEffect(() => {
+    if (!id) return;
+    
+    const randomNonce = Math.random().toString(36).substring(2, 15);
+    setNonce(randomNonce);
+    // Store nonce in cookie
+    document.cookie = `submission_nonce_${id}=${randomNonce}; path=/; max-age=31536000`;
+  }, [id]);
+
+  // Calculate time remaining
+  useEffect(() => {
+    if (!challenge) return;
+
+    const updateTimeRemaining = () => {
+      const now = Math.floor(Date.now() / 1000);
+      const deadline = challenge.submissionDeadline.toNumber();
+      const remaining = deadline - now;
+
+      if (remaining <= 0) {
+        setTimeRemaining('Submission period has ended');
+        return;
+      }
+
+      const hours = Math.floor(remaining / 3600);
+      const minutes = Math.floor((remaining % 3600) / 60);
+      const seconds = remaining % 60;
+      setTimeRemaining(`${hours}h ${minutes}m ${seconds}s`);
+    };
+
+    updateTimeRemaining();
+    const interval = setInterval(updateTimeRemaining, 1000);
+    return () => clearInterval(interval);
+  }, [challenge]);
 
   if (!challenge) {
-    return <div>No challenge data available</div>;
+    return (
+      <div style={{ 
+        height: "100%",
+        color: "white",
+        display: "flex",
+        flexDirection: "column",
+        padding: "20px",
+        maxWidth: "1200px",
+        margin: "0 auto",
+        width: "100%",
+      }}>
+        <div style={{
+          background: "rgba(255, 255, 255, 0.02)",
+          borderRadius: "12px",
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+          backdropFilter: "blur(10px)",
+          overflow: "hidden",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          padding: "20px",
+          alignItems: "center",
+          justifyContent: "center",
+        }}>
+          {error ? (
+            <div style={{ color: "#ff6b6b" }}>{error}</div>
+          ) : (
+            <div>Loading challenge data...</div>
+          )}
+        </div>
+      </div>
+    );
   }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!program || !wallet.publicKey || !id) {
+      setError('Wallet not connected or challenge ID missing');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setError(null);
+
+      // Check if submission deadline has passed
+      const now = Math.floor(Date.now() / 1000);
+      if (now >= challenge.submissionDeadline.toNumber()) {
+        setError('Submission deadline has passed');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Create hash of answer + nonce using Web Crypto API
+      const encoder = new TextEncoder();
+      const data = encoder.encode(answer + nonce);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+
+      // Derive the challenge PDA
+      const [challengePda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("challenge"), new BN(id).toArrayLike(Buffer, "le", 8)],
+        program.programId
+      );
+
+      // Derive the submission PDA
+      const [submissionPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("submission"), challengePda.toBuffer(), wallet.publicKey.toBuffer()],
+        program.programId
+      );
+
+      // Create submission
+      const tx = await program.methods
+        .createSubmission(hashArray)
+        .accounts({
+          submitter: wallet.publicKey,
+          challengeAccount: challengePda,
+          submissionAccount: submissionPda,
+          systemProgram: SystemProgram.programId,
+        })
+        .rpc();
+
+      console.log('Submission transaction:', tx);
+      navigate('/');
+    } catch (err) {
+      console.error('Submission error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to submit answer');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div style={{ 
@@ -17,6 +220,9 @@ const CreateSubmission: React.FC = () => {
       display: "flex",
       flexDirection: "column",
       padding: "20px",
+      maxWidth: "1200px",
+      margin: "0 auto",
+      width: "100%",
     }}>
       <div style={{
         background: "rgba(255, 255, 255, 0.02)",
@@ -29,14 +235,150 @@ const CreateSubmission: React.FC = () => {
         flexDirection: "column",
         padding: "20px",
       }}>
-        <h1>Submit Answer for Challenge #{challenge.id.toString()}</h1>
-        <p>Question: {challenge.question}</p>
-        <p>Entry Fee: {challenge.entryFee.toNumber() / 1e9} SOL</p>
-        <p>Submission Deadline: {new Date(challenge.submissionDeadline.toNumber() * 1000).toLocaleString()}</p>
+        <h1 style={{
+          fontSize: "24px",
+          fontWeight: "600",
+          marginBottom: "24px",
+          color: "rgba(255, 255, 255, 0.9)",
+        }}>Submit Answer for Challenge #{id}</h1>
         
-        <div style={{ marginTop: "20px" }}>
-          <p>Answer submission form will be implemented here.</p>
+        {/* Challenge Information */}
+        <div style={{ 
+          marginBottom: "24px",
+          background: "rgba(255, 255, 255, 0.05)",
+          borderRadius: "8px",
+          padding: "20px",
+        }}>
+          <h2 style={{
+            fontSize: "18px",
+            fontWeight: "600",
+            marginBottom: "16px",
+            color: "rgba(255, 255, 255, 0.9)",
+          }}>Challenge Information</h2>
+          <p style={{ marginBottom: "8px" }}><strong>Question:</strong> {challenge.question}</p>
+          <p style={{ marginBottom: "8px" }}><strong>Submission Deadline:</strong> {new Date(challenge.submissionDeadline.toNumber() * 1000).toLocaleString()}</p>
+          <p style={{ marginBottom: "8px" }}><strong>Answer Reveal Deadline:</strong> {new Date(challenge.answerRevealDeadline.toNumber() * 1000).toLocaleString()}</p>
+          <p style={{ marginBottom: "8px" }}><strong>Claim Deadline:</strong> {new Date(challenge.claimDeadline.toNumber() * 1000).toLocaleString()}</p>
         </div>
+
+        {/* Challenge Metrics */}
+        <div style={{ 
+          marginBottom: "24px",
+          background: "rgba(255, 255, 255, 0.05)",
+          borderRadius: "8px",
+          padding: "20px",
+        }}>
+          <h2 style={{
+            fontSize: "18px",
+            fontWeight: "600",
+            marginBottom: "16px",
+            color: "rgba(255, 255, 255, 0.9)",
+          }}>Challenge Metrics</h2>
+          <p style={{ marginBottom: "8px" }}><strong>Entry Fee:</strong> {challenge.entryFee.toNumber() / 1e9} SOL</p>
+          <p style={{ marginBottom: "8px" }}><strong>Pot:</strong> {challenge.pot.toNumber() / 1e9} SOL</p>
+          <p style={{ marginBottom: "8px" }}><strong>Time Remaining:</strong> {timeRemaining}</p>
+        </div>
+
+        {/* Answer Submission Form */}
+        <form onSubmit={handleSubmit} style={{ 
+          marginTop: "20px",
+          background: "rgba(255, 255, 255, 0.05)",
+          borderRadius: "8px",
+          padding: "20px",
+        }}>
+          <div style={{ marginBottom: "20px" }}>
+            <label htmlFor="answer" style={{ 
+              display: "block", 
+              marginBottom: "8px",
+              fontSize: "16px",
+              fontWeight: "500",
+              color: "rgba(255, 255, 255, 0.9)",
+            }}>
+              Your Answer:
+            </label>
+            <input
+              type="text"
+              id="answer"
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              required
+              style={{
+                width: "100%",
+                padding: "12px",
+                borderRadius: "6px",
+                background: "rgba(255, 255, 255, 0.05)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                color: "white",
+                fontSize: "16px",
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: "20px" }}>
+            <label htmlFor="nonce" style={{ 
+              display: "block", 
+              marginBottom: "8px",
+              fontSize: "16px",
+              fontWeight: "500",
+              color: "rgba(255, 255, 255, 0.9)",
+            }}>
+              Nonce (Save this!):
+            </label>
+            <input
+              type="text"
+              id="nonce"
+              value={nonce}
+              readOnly
+              style={{
+                width: "100%",
+                padding: "12px",
+                borderRadius: "6px",
+                background: "rgba(255, 255, 255, 0.05)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                color: "white",
+                fontSize: "16px",
+              }}
+            />
+            <p style={{ 
+              marginTop: "8px", 
+              color: "rgba(255, 255, 255, 0.7)",
+              fontSize: "14px" 
+            }}>
+              ⚠️ Important: Save this nonce! You'll need it to reveal your answer later.
+              If you clear your browser cookies, you won't be able to reveal your answer without this nonce.
+            </p>
+          </div>
+
+          {error && (
+            <div style={{ 
+              color: "#ff6b6b", 
+              marginBottom: "20px",
+              padding: "12px",
+              background: "rgba(255, 107, 107, 0.1)",
+              borderRadius: "6px",
+            }}>
+              {error}
+            </div>
+          )}
+
+          <button 
+            type="submit"
+            disabled={isSubmitting}
+            style={{
+              padding: "12px 24px",
+              borderRadius: "6px",
+              border: "none",
+              background: isSubmitting ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.2)",
+              color: "white",
+              cursor: isSubmitting ? "not-allowed" : "pointer",
+              transition: "all 0.2s ease",
+              fontSize: "16px",
+              width: "100%",
+            }}
+          >
+            {isSubmitting ? 'Submitting...' : 'Submit Answer'}
+          </button>
+        </form>
 
         <button 
           onClick={() => navigate('/')}
@@ -49,6 +391,7 @@ const CreateSubmission: React.FC = () => {
             cursor: "pointer",
             transition: "all 0.2s ease",
             marginTop: "20px",
+            alignSelf: "flex-start",
           }}
         >
           Back to Challenges

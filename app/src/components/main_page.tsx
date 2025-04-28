@@ -331,7 +331,7 @@ const ActionButton: React.FC<{ challenge: any }> = ({ challenge }) => {
   if (now < challenge.submissionDeadline.toNumber()) {
     return (
       <button 
-        onClick={() => navigate(`/create-submission`, { state: { challenge } })}
+        onClick={() => navigate(`/create-submission/${challenge.id}`, { state: { challenge } })}
         style={buttonStyle}
       >
         Submit Answer
