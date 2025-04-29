@@ -85,7 +85,7 @@ const CreateSubmission: React.FC = () => {
 
     const updateTimeRemaining = () => {
       const now = Math.floor(Date.now() / 1000);
-      const deadline = challenge.submissionDeadline;
+      const deadline = Math.floor(new Date(challenge.submissionDeadline).getTime() / 1000);
       const remaining = deadline - now;
 
       if (remaining <= 0) {
@@ -226,41 +226,48 @@ const CreateSubmission: React.FC = () => {
           color: "rgba(255, 255, 255, 0.9)",
         }}>Submit Answer for Challenge #{id}</h1>
         
-        {/* Challenge Information */}
+        {/* Challenge Information and Metrics Container */}
         <div style={{ 
+          display: "flex",
+          gap: "24px",
           marginBottom: "24px",
-          background: "rgba(255, 255, 255, 0.05)",
-          borderRadius: "8px",
-          padding: "20px",
         }}>
-          <h2 style={{
-            fontSize: "18px",
-            fontWeight: "600",
-            marginBottom: "16px",
-            color: "rgba(255, 255, 255, 0.9)",
-          }}>Challenge Information</h2>
-          <p style={{ marginBottom: "8px" }}><strong>Question:</strong> {challenge.question}</p>
-          <p style={{ marginBottom: "8px" }}><strong>Submission Deadline:</strong> {challenge.submissionDeadline}</p>
-          <p style={{ marginBottom: "8px" }}><strong>Answer Reveal Deadline:</strong> {challenge.answerRevealDeadline}</p>
-          <p style={{ marginBottom: "8px" }}><strong>Claim Deadline:</strong> {challenge.claimDeadline}</p>
-        </div>
+          {/* Challenge Information */}
+          <div style={{ 
+            flex: 1,
+            background: "rgba(255, 255, 255, 0.05)",
+            borderRadius: "8px",
+            padding: "20px",
+          }}>
+            <h2 style={{
+              fontSize: "18px",
+              fontWeight: "600",
+              marginBottom: "16px",
+              color: "rgba(255, 255, 255, 0.9)",
+            }}>Challenge Information</h2>
+            <p style={{ marginBottom: "8px" }}><strong>Question:</strong> {challenge.question}</p>
+            <p style={{ marginBottom: "8px" }}><strong>Submission Deadline:</strong> {challenge.submissionDeadline}</p>
+            <p style={{ marginBottom: "8px" }}><strong>Answer Reveal Deadline:</strong> {challenge.answerRevealDeadline}</p>
+            <p style={{ marginBottom: "8px" }}><strong>Claim Deadline:</strong> {challenge.claimDeadline}</p>
+          </div>
 
-        {/* Challenge Metrics */}
-        <div style={{ 
-          marginBottom: "24px",
-          background: "rgba(255, 255, 255, 0.05)",
-          borderRadius: "8px",
-          padding: "20px",
-        }}>
-          <h2 style={{
-            fontSize: "18px",
-            fontWeight: "600",
-            marginBottom: "16px",
-            color: "rgba(255, 255, 255, 0.9)",
-          }}>Challenge Metrics</h2>
-          <p style={{ marginBottom: "8px" }}><strong>Entry Fee:</strong> {challenge.entryFee.toNumber() / 1e9} SOL</p>
-          <p style={{ marginBottom: "8px" }}><strong>Pot:</strong> {challenge.pot.toNumber() / 1e9} SOL</p>
-          <p style={{ marginBottom: "8px" }}><strong>Time Remaining:</strong> {timeRemaining}</p>
+          {/* Challenge Metrics */}
+          <div style={{ 
+            flex: 1,
+            background: "rgba(255, 255, 255, 0.05)",
+            borderRadius: "8px",
+            padding: "20px",
+          }}>
+            <h2 style={{
+              fontSize: "18px",
+              fontWeight: "600",
+              marginBottom: "16px",
+              color: "rgba(255, 255, 255, 0.9)",
+            }}>Challenge Metrics</h2>
+            <p style={{ marginBottom: "8px" }}><strong>Entry Fee:</strong> {challenge.entryFee.toNumber() / 1e9} SOL</p>
+            <p style={{ marginBottom: "8px" }}><strong>Pot:</strong> {challenge.pot.toNumber() / 1e9} SOL</p>
+            <p style={{ marginBottom: "8px" }}><strong>Time Remaining:</strong> {timeRemaining}</p>
+          </div>
         </div>
 
         {/* Answer Submission Form */}

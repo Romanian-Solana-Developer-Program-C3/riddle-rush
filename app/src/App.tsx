@@ -129,7 +129,7 @@ function App() {
                 <Routes>
                   <Route path="/" element={<MainPage />} />
                   <Route path="/create-submission/:id" element={<CreateSubmission />} />
-                  <Route path="/submission-reveal" element={<SubmissionReveal />} />
+                  <Route path="/submission-reveal/:id" element={<SubmissionReveal />} />
                   <Route path="/create-challenge" element={<CreateChallenge />} />
                 </Routes>
               </div>

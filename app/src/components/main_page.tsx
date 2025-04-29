@@ -340,7 +340,7 @@ const ActionButton: React.FC<{ challenge: any }> = ({ challenge }) => {
   } else if (now < challenge.answerRevealDeadline.toNumber()) {
     return (
       <button 
-        onClick={() => navigate(`/submission-reveal`, { state: { challenge } })}
+        onClick={() => navigate(`/submission-reveal/${challenge.id}`, { state: { challenge } })}
         style={buttonStyle}
       >
         Reveal Answer
