@@ -35,45 +35,29 @@ const CreateSubmission: React.FC = () => {
         return;
       }
 
+      const [challengePda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("challenge"), new BN(id).toArrayLike(Buffer, "le", 8)],
+        program.programId
+      );
+      const challenge = await (program.account as any).challengeAccount.fetch(challengePda);
       try {
         console.log('Fetching challenge data...');
         console.log('Challenge ID:', id);
-        console.log('Initial challenge:', initialChallenge);
-        console.log('Submission deadline:', initialChallenge.submissionDeadline);
-        console.log('Answer reveal deadline:', initialChallenge.answerRevealDeadline);
-        console.log('Claim deadline:', initialChallenge.claimDeadline);
-        console.log('Entry fee:', initialChallenge.entryFee);
-        console.log('Pot:', initialChallenge.pot);
-        console.log('Program account:', program.account);
-        console.log('Available accounts:', Object.keys(program.account));
-
+        console.log('Initial challenge:', challenge);
+        
         // Create a new challenge object with the BN values properly converted
         const challengeData = {
-          id: initialChallenge.id,
-          question: initialChallenge.question,
-          solution: initialChallenge.solution,
-          submissionDeadline: new BN(initialChallenge.submissionDeadline.words[0]).add(new BN(initialChallenge.submissionDeadline.words[1]).mul(new BN(0x10000000))),
-          answerRevealDeadline: new BN(initialChallenge.answerRevealDeadline.words[0]).add(new BN(initialChallenge.answerRevealDeadline.words[1]).mul(new BN(0x10000000))),
-          claimDeadline: new BN(initialChallenge.claimDeadline.words[0]).add(new BN(initialChallenge.claimDeadline.words[1]).mul(new BN(0x10000000))),
-          entryFee: new BN(initialChallenge.entryFee.words[0]),
-          pot: new BN(initialChallenge.pot.words[0]),
-          setter: initialChallenge.setter,
-          publicKey: initialChallenge.pda,
+          id: challenge.id,
+          question: challenge.question,
+          solution: challenge.solution,
+          submissionDeadline: new Date(challenge.submissionDeadline.toNumber() * 1000).toLocaleString(),
+          answerRevealDeadline: new Date(challenge.answerRevealDeadline.toNumber() * 1000).toLocaleString(),
+          claimDeadline: new Date(challenge.claimDeadline.toNumber() * 1000).toLocaleString(),
+          entryFee: new BN(challenge.entryFee.toNumber()),
+          pot: new BN(challenge.pot.toNumber()),
+          setter: challenge.setter,
+          publicKey: challenge.pda,
         };
-
-        console.log('Debug - Initial Challenge Data:');
-        console.log('Raw submission deadline:', initialChallenge.submissionDeadline);
-        console.log('Raw submission deadline words:', initialChallenge.submissionDeadline.words);
-        console.log('Converted submission deadline:', challengeData.submissionDeadline.toString());
-        console.log('Submission deadline as date:', new Date(challengeData.submissionDeadline.toNumber() * 1000).toISOString());
-        console.log('Current time:', new Date().toISOString());
-
-        const now = Math.floor(Date.now() / 1000);
-        console.log('Current time:', now);
-        console.log('Current time (date):', new Date(now * 1000).toLocaleString());
-        console.log('Submission deadline:', challengeData.submissionDeadline.toNumber());
-        console.log('Submission deadline (date):', new Date(challengeData.submissionDeadline.toNumber() * 1000).toLocaleString());
-        console.log('Time remaining:', challengeData.submissionDeadline.toNumber() - now, 'seconds');
 
         setChallenge(challengeData);
       } catch (err) {
@@ -101,7 +85,7 @@ const CreateSubmission: React.FC = () => {
 
     const updateTimeRemaining = () => {
       const now = Math.floor(Date.now() / 1000);
-      const deadline = challenge.submissionDeadline.toNumber();
+      const deadline = challenge.submissionDeadline;
       const remaining = deadline - now;
 
       if (remaining <= 0) {
@@ -256,9 +240,9 @@ const CreateSubmission: React.FC = () => {
             color: "rgba(255, 255, 255, 0.9)",
           }}>Challenge Information</h2>
           <p style={{ marginBottom: "8px" }}><strong>Question:</strong> {challenge.question}</p>
-          <p style={{ marginBottom: "8px" }}><strong>Submission Deadline:</strong> {new Date(challenge.submissionDeadline.toNumber() * 1000).toLocaleString()}</p>
-          <p style={{ marginBottom: "8px" }}><strong>Answer Reveal Deadline:</strong> {new Date(challenge.answerRevealDeadline.toNumber() * 1000).toLocaleString()}</p>
-          <p style={{ marginBottom: "8px" }}><strong>Claim Deadline:</strong> {new Date(challenge.claimDeadline.toNumber() * 1000).toLocaleString()}</p>
+          <p style={{ marginBottom: "8px" }}><strong>Submission Deadline:</strong> {challenge.submissionDeadline}</p>
+          <p style={{ marginBottom: "8px" }}><strong>Answer Reveal Deadline:</strong> {challenge.answerRevealDeadline}</p>
+          <p style={{ marginBottom: "8px" }}><strong>Claim Deadline:</strong> {challenge.claimDeadline}</p>
         </div>
 
         {/* Challenge Metrics */}
