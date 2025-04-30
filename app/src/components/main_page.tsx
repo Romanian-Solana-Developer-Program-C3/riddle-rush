@@ -71,6 +71,8 @@ const MainPage: React.FC = () => {
           }
         }
 
+        // Sort challenges in reverse order by ID
+        fetchedChallenges.sort((a, b) => b.id.toNumber() - a.id.toNumber());
         setChallenges(fetchedChallenges);
         hasFetchedChallenges.current = true; // Mark challenges as fetched
       } catch (error) {
@@ -97,22 +99,28 @@ const MainPage: React.FC = () => {
           borderRadius: "12px",
           boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
           backdropFilter: "blur(10px)",
-          overflow: "hidden",
           height: "100%",
           display: "flex",
           flexDirection: "column",
+          position: "relative",
         }}>
           <div style={{
-            background: "rgba(10, 5, 41, 0.95)",
-            backdropFilter: "blur(10px)",
-            borderBottom: "2px solid rgba(255, 255, 255, 0.1)",
+            flex: 1,
+            overflowY: "auto",
           }}>
             <table style={{
               width: "100%",
               borderCollapse: "collapse",
               borderSpacing: "0",
+              tableLayout: "fixed",
             }}>
-              <thead>
+              <thead style={{
+                position: "sticky",
+                top: 0,
+                zIndex: 1,
+                background: "rgba(10, 5, 41, 0.95)",
+                backdropFilter: "blur(10px)",
+              }}>
                 <tr>
                   <th style={{...tableHeaderStyle, width: '5%'}}>ID</th>
                   <th style={{...tableHeaderStyle, width: '25%'}}>Question</th>
@@ -125,17 +133,6 @@ const MainPage: React.FC = () => {
                   <th style={{...tableHeaderStyle, width: '10%'}}>Action</th>
                 </tr>
               </thead>
-            </table>
-          </div>
-          <div style={{
-            flex: 1,
-            overflowY: "auto",
-          }}>
-            <table style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              borderSpacing: "0",
-            }}>
               <tbody>
                 {challenges.map((challenge, index) => (
                   <tr 

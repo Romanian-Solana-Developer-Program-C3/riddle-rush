@@ -92,7 +92,7 @@ function App() {
               left: 0,
               right: 0,
               bottom: 0,
-              overflow: 'hidden',
+              overflow: 'auto',
               display: 'flex',
               flexDirection: 'column',
               background: 'linear-gradient(to bottom, #0a0529, #1a1a1a)',

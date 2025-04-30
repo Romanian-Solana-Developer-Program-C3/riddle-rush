@@ -24,6 +24,7 @@ const SubmissionReveal: React.FC = () => {
   const [answer, setAnswer] = useState('');
   const [nonce, setNonce] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRevealingSolution, setIsRevealingSolution] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
 
@@ -163,6 +164,11 @@ const SubmissionReveal: React.FC = () => {
         return;
       }
 
+      // Log the values being sent to the program
+      console.log('Reveal - Nonce:', nonce);
+      console.log('Reveal - Answer:', answer);
+      console.log('Reveal - Concatenated string:', `${answer}${nonce}`);
+
       // Derive the challenge PDA
       const [challengePda] = PublicKey.findProgramAddressSync(
         [Buffer.from("challenge"), new BN(id).toArrayLike(Buffer, "le", 8)],
@@ -193,6 +199,51 @@ const SubmissionReveal: React.FC = () => {
       setError(err instanceof Error ? err.message : 'Failed to reveal answer');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleRevealSolution = async () => {
+    if (!program || !wallet.publicKey || !id) {
+      setError('Wallet not connected or challenge ID missing');
+      return;
+    }
+
+    try {
+      setIsRevealingSolution(true);
+      setError(null);
+
+      // Check if answer reveal deadline has passed
+      const now = Math.floor(Date.now() / 1000);
+      const deadline = Math.floor(new Date(challenge.answerRevealDeadline).getTime() / 1000);
+      if (now >= deadline) {
+        setError('Answer reveal deadline has passed');
+        setIsRevealingSolution(false);
+        return;
+      }
+
+      // Derive the challenge PDA
+      const [challengePda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("challenge"), new BN(id).toArrayLike(Buffer, "le", 8)],
+        program.programId
+      );
+
+      // Call challenge_solution_reveal instruction
+      const tx = await program.methods
+        .challengeSolutionReveal(new BN(id))
+        .accounts({
+          user: wallet.publicKey,
+          challengeAccount: challengePda,
+          systemProgram: SystemProgram.programId,
+        })
+        .rpc();
+
+      console.log('Challenge solution reveal transaction:', tx);
+      alert('Challenge solution revealed successfully!');
+    } catch (err) {
+      console.error('Challenge solution reveal error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to reveal challenge solution');
+    } finally {
+      setIsRevealingSolution(false);
     }
   };
 
@@ -362,22 +413,41 @@ const SubmissionReveal: React.FC = () => {
           </button>
         </form>
 
-        <button 
-          onClick={() => navigate('/')}
-          style={{
-            padding: "8px 16px",
-            borderRadius: "6px",
-            border: "none",
-            background: "rgba(255, 255, 255, 0.1)",
-            color: "white",
-            cursor: "pointer",
-            transition: "all 0.2s ease",
-            marginTop: "20px",
-            alignSelf: "flex-start",
-          }}
-        >
-          Back to Challenges
-        </button>
+        <div style={{
+          display: "flex",
+          gap: "12px",
+          marginTop: "20px",
+        }}>
+          <button 
+            onClick={() => navigate('/')}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "6px",
+              border: "none",
+              background: "rgba(255, 255, 255, 0.1)",
+              color: "white",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+          >
+            Back to Challenges
+          </button>
+          <button 
+            onClick={handleRevealSolution}
+            disabled={isRevealingSolution}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "6px",
+              border: "none",
+              background: isRevealingSolution ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.2)",
+              color: "white",
+              cursor: isRevealingSolution ? "not-allowed" : "pointer",
+              transition: "all 0.2s ease",
+            }}
+          >
+            {isRevealingSolution ? 'Revealing Solution...' : 'Reveal Challenge Solution'}
+          </button>
+        </div>
       </div>
     </div>
   );

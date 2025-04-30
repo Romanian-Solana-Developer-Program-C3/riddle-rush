@@ -18,6 +18,8 @@
     "@solana/web3.js": "^1.98.2",
     "bn.js": "^5.2.2",
     "buffer": "^6.0.3",
+    "ethereum-cryptography": "^3.2.0",
+    "keccak": "^3.0.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.5.1"
@@ -26,6 +28,7 @@
     "@coral-xyz/anchor-cli": "^0.31.2",
     "@eslint/js": "^9.22.0",
     "@types/bn.js": "^5.1.5",
+    "@types/keccak": "^3.0.5",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",

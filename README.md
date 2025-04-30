@@ -8,8 +8,8 @@ Riddle Rush is a decentralized, high-stakes math puzzle game built on Solana, wh
 
 ```
 riddle-rush/
-├── programs/           # Solana program source code
-├── app/               # Web application
+├── programs/         # Solana program source code
+├── app/              # Web application
 │   ├── src/          # Frontend source code
 │   ├── public/       # Static assets
 │   └── Dockerfile    # Docker configuration

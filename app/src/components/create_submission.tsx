@@ -5,6 +5,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Buffer } from 'buffer';
 import BN from 'bn.js';
 import { PublicKey, SystemProgram } from '@solana/web3.js';
+import { keccak256 } from 'ethereum-cryptography/keccak';
 
 // Polyfill Buffer for browser
 if (typeof window !== 'undefined') {
@@ -152,17 +153,19 @@ const CreateSubmission: React.FC = () => {
 
       // Check if submission deadline has passed
       const now = Math.floor(Date.now() / 1000);
-      if (now >= challenge.submissionDeadline.toNumber()) {
+      if (now >= challenge.submissionDeadline) {
         setError('Submission deadline has passed');
         setIsSubmitting(false);
         return;
       }
 
-      // Create hash of answer + nonce using Web Crypto API
-      const encoder = new TextEncoder();
-      const data = encoder.encode(answer + nonce);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      // Create hash of answer + nonce using Keccak-256
+      const concatenated_answer = `${answer}${nonce}`;
+      const hashBuffer = keccak256(Buffer.from(concatenated_answer));
       const hashArray = Array.from(new Uint8Array(hashBuffer));
+      
+      console.log('Submission - Concatenated string:', concatenated_answer);
+      console.log('Submission - Hash array:', hashArray);
 
       // Derive the challenge PDA
       const [challengePda] = PublicKey.findProgramAddressSync(
