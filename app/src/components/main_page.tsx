@@ -6,6 +6,8 @@ import { Buffer } from "buffer";
 import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
 import { Program } from "@coral-xyz/anchor";
 import { RiddleRush } from "../anchor/riddle_rush";
+import { SystemProgram } from "@solana/web3.js";
+
 
 const GLOBAL_ID = 20; // Fixed global ID for now
 
@@ -241,9 +243,9 @@ const ActionButton: React.FC<{ challenge: any }> = ({ challenge }) => {
         try {
           // Call setter_claim function
           await programContext?.program.methods
-            .setter_claim()
+            .setterClaim()
             .accounts({
-              challenge_account: challengePda,
+              challengeAccount: challengePda,
               setter: wallet.publicKey,
             })
             .rpc();
@@ -264,7 +266,7 @@ const ActionButton: React.FC<{ challenge: any }> = ({ challenge }) => {
       // Check if the user is a submitter
       let isSubmitter = false;
       try {
-        const submission = await programContext?.program.account.SubmissionAccount.fetch(submissionPda);
+        const submission = await programContext?.program.account.submissionAccount.fetch(submissionPda);
         isSubmitter = submission.submitter.toBase58() === userPublicKey;
       } catch (error) {
         console.warn("No submission account found for this user:", error);
@@ -274,10 +276,10 @@ const ActionButton: React.FC<{ challenge: any }> = ({ challenge }) => {
         try {
           // Call submitter_claim function
           await programContext?.program.methods
-            .submitter_claim()
+            .submitterClaim()
             .accountsPartial({
-              challenge_account: challengePda,
-              submission_account: submissionPda,
+              challengeAccount: challengePda,
+              submissionAccount: submissionPda,
               submitter: wallet.publicKey,
             })
             .rpc();
@@ -309,9 +311,9 @@ const ActionButton: React.FC<{ challenge: any }> = ({ challenge }) => {
     if (challenge.setter.toBase58() === wallet.publicKey.toBase58()) {
       try {
         await programContext?.program.methods
-          .setter_close_challenge()
+          .setterCloseChallenge()
           .accountsPartial({
-            challenge_account: challengePda,
+            challengeAccount: challengePda,
             setter: wallet.publicKey,
           })
           .rpc();
