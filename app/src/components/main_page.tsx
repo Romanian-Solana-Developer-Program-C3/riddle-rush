@@ -214,12 +214,71 @@ const StatusDisplay: React.FC<{ challenge: any }> = ({ challenge }) => {
   }
 };
 
+const isSubmitter = async (challenge: any, programContext: any, wallet: any) => {
+  const userPublicKey = wallet.publicKey.toBase58();
+
+  if (!wallet) {
+    alert("Wallet not connected");
+    return;
+  }
+  try {
+    const [challengePda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("challenge"), new BN(challenge.id).toArrayLike(Buffer, "le", 8)],
+      programContext?.program.programId
+    );
+
+    console.log("Derived Challenge PDA:", challengePda.toBase58());
+
+    const [submissionPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("submission"), challengePda.toBuffer(), wallet.publicKey.toBuffer()],
+      programContext?.program.programId
+    );
+
+    let submission;
+    try {
+      submission = await programContext?.program.account.submissionAccount.fetch(submissionPda);
+    } catch (error) {
+      console.warn("No submission account found for this user:", error);
+      return false;
+    }
+    const isSubmitter = submission && submission.submitter && submission.submitter.toBase58() === userPublicKey;
+    return isSubmitter;
+  } catch (error) {
+    console.error("Error checking if user is submitter:", error);
+    return false;
+  }
+}
+
 // Action button component
 const ActionButton: React.FC<{ challenge: any }> = ({ challenge }) => {
   const now = Math.floor(Date.now() / 1000);
   const navigate = useNavigate();
   const programContext = useProgram();
   const wallet = programContext?.provider?.wallet;
+
+  const handleSubmit = async () => {
+    const setter = challenge.setter.toBase58();
+    const userPublicKey = wallet.publicKey.toBase58();
+    const hasSubmitted = await isSubmitter(challenge, programContext, wallet);
+
+    if (setter === userPublicKey) {
+      alert("As the setter, you cannot create a submission for this challenge.");
+      return;
+    } else if (!hasSubmitted) {
+      navigate(`/create-submission/${challenge.id}`, { state: { challenge } });
+    } else {
+      alert("You have already submitted an answer for this challenge.");
+    }
+  }
+
+  const handleReveal = async () => {
+    const hasSubmitted = await isSubmitter(challenge, programContext, wallet);
+    if (hasSubmitted) {
+      navigate(`/submission-reveal/${challenge.id}`, { state: { challenge } });
+    } else {
+      alert("You have not submitted an answer for this challenge.");
+    }
+  }
 
   const handleClaim = async () => {
     if (!wallet) {
@@ -330,7 +389,7 @@ const ActionButton: React.FC<{ challenge: any }> = ({ challenge }) => {
   if (now < challenge.submissionDeadline.toNumber()) {
     return (
       <button 
-        onClick={() => navigate(`/create-submission/${challenge.id}`, { state: { challenge } })}
+        onClick={handleSubmit}
         style={buttonStyle}
       >
         Submit Answer
@@ -339,7 +398,7 @@ const ActionButton: React.FC<{ challenge: any }> = ({ challenge }) => {
   } else if (now < challenge.answerRevealDeadline.toNumber()) {
     return (
       <button 
-        onClick={() => navigate(`/submission-reveal/${challenge.id}`, { state: { challenge } })}
+        onClick={handleReveal}
         style={buttonStyle}
       >
         Reveal Answer
