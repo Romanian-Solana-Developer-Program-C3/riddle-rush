@@ -5,6 +5,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Buffer } from 'buffer';
 import BN from 'bn.js';
 import { PublicKey, SystemProgram } from '@solana/web3.js';
+import { keccak256 } from 'ethereum-cryptography/keccak';
 
 // Polyfill Buffer for browser
 if (typeof window !== 'undefined') {
@@ -169,6 +170,11 @@ const SubmissionReveal: React.FC = () => {
       console.log('Reveal - Answer:', answer);
       console.log('Reveal - Concatenated string:', `${answer}${nonce}`);
 
+      const concatenated_answer = `${answer}${nonce}`;
+      const hashBuffer = keccak256(Buffer.from(concatenated_answer));
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+
+      
       // Derive the challenge PDA
       const [challengePda] = PublicKey.findProgramAddressSync(
         [Buffer.from("challenge"), new BN(id).toArrayLike(Buffer, "le", 8)],
@@ -181,10 +187,14 @@ const SubmissionReveal: React.FC = () => {
         program.programId
       );
 
+      const submission = await (program.account as any).submissionAccount.fetch(submissionPda);
+      console.log("Submission answer: ", submission.encryptedAnswer);
+      console.log("Hash of answer + nonce: ", hashArray);
+
       // Reveal submission
       const tx = await program.methods
         .submissionSolutionReveal(nonce, answer)
-        .accounts({
+        .accountsPartial({
           submitter: wallet.publicKey,
           challengeAccount: challengePda,
           submissionAccount: submissionPda,
@@ -230,7 +240,7 @@ const SubmissionReveal: React.FC = () => {
       // Call challenge_solution_reveal instruction
       const tx = await program.methods
         .challengeSolutionReveal(new BN(id))
-        .accounts({
+        .accountsPartial({
           user: wallet.publicKey,
           challengeAccount: challengePda,
           systemProgram: SystemProgram.programId,

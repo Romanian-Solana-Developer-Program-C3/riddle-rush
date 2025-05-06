@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 
 use crate::{ChallengeAccount, SubmissionAccount};
 use crate::error::RiddleRushError;
-use tiny_keccak::{Hasher, Sha3};
+use tiny_keccak::{Hasher, Keccak};
 
 #[derive(Accounts)]
 pub struct SubmissionSolutionReveal<'info> {
@@ -31,7 +31,7 @@ pub fn handler(ctx: Context<SubmissionSolutionReveal>, nonce: String, plaintext_
     require!(submission.revealed == false, RiddleRushError::SubmissionAlreadyRevealed);
     require!(challenge.solution != "", RiddleRushError::SolutionNotRevealed);
 
-    let mut hasher = Sha3::v256();
+    let mut hasher = Keccak::v256();
     let mut hash_output = [0u8; 32];
 
     // compute the keccak256 hash of the plaintext answer concatenated with the nonce

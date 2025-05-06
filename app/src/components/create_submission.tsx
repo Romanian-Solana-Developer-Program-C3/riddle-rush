@@ -5,7 +5,8 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Buffer } from 'buffer';
 import BN from 'bn.js';
 import { PublicKey, SystemProgram } from '@solana/web3.js';
-import { keccak256 } from 'ethereum-cryptography/keccak';
+import pkg from 'js-sha3';
+const { keccak_256 } = pkg;
 
 // Polyfill Buffer for browser
 if (typeof window !== 'undefined') {
@@ -160,11 +161,15 @@ const CreateSubmission: React.FC = () => {
       }
 
       // Create hash of answer + nonce using Keccak-256
-      const concatenated_answer = `${answer}${nonce}`;
-      const hashBuffer = keccak256(Buffer.from(concatenated_answer));
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const data = `${answer}${nonce}`;
       
-      console.log('Submission - Concatenated string:', concatenated_answer);
+        // Hash the concatenated string using SHA-256
+      const hashHex = keccak_256(data);
+    
+      // Convert the hash (hex string) to a Uint8Array
+      const hashArray = new Uint8Array(hashHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
+      
+      console.log('Submission - Concatenated string:', data);
       console.log('Submission - Hash array:', hashArray);
 
       // Derive the challenge PDA
@@ -181,8 +186,8 @@ const CreateSubmission: React.FC = () => {
 
       // Create submission
       const tx = await program.methods
-        .createSubmission(hashArray)
-        .accounts({
+        .createSubmission(Array.from(hashArray))
+        .accountsPartial({
           submitter: wallet.publicKey,
           challengeAccount: challengePda,
           submissionAccount: submissionPda,

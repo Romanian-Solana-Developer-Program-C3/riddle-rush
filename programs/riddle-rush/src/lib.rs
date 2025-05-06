@@ -9,7 +9,7 @@ pub use constants::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("3bKvaAkVaejaBLzpo6qzRMLUXbKpUUTm6G7LagPFNWEJ");
+declare_id!("Gb4JYubKArC3R3EpQSzYwoPecYBNi2znUmtHrhLNeVsM");
 
 #[program]
 pub mod riddle_rush {
